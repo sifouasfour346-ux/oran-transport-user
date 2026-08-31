@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>وهران للنقل</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#161327">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Firebase (compat build: works with plain <script> tags, no bundler needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBDH0kf2NBfX6ijHF8mAhpZ-8ryEG8orZI",
+    authDomain: "oran31-2312c.firebaseapp.com",
+    databaseURL: "https://oran31-2312c-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "oran31-2312c",
+    storageBucket: "oran31-2312c.firebasestorage.app",
+    messagingSenderId: "989297532172",
+    appId: "1:989297532172:web:9dff5e9b800172cbcdfd29"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
+<style>
+  :root{
+    --navy:#161327;
+    --navy-2:#241f45;
+    --blue:#6C63FF;
+    --blue-dark:#5347E0;
+    --green:#12B76A;
+    --green-bg:#E7F9F1;
+    --green-text:#0E9F5C;
+    --purple:#9B5DE5;
+    --panel-bg:#ffffff;
+    --border:#ECECF5;
+    --text-dark:#1A1B2E;
+    --text-mid:#6E7191;
+    --amber:#FF9F43;
+    --bg-app:#F4F4FC;
+    --shadow-soft:0 6px 18px rgba(78,70,180,0.10);
+    --shadow-pop:0 10px 28px rgba(78,70,180,0.22);
+    --ease-pop: cubic-bezier(.34,1.56,.64,1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{
+    height:100%;
+    font-family:"Segoe UI", "Tahoma", "Arial", sans-serif;
+    background:var(--bg-app);
+    color:var(--text-dark);
+    overflow:hidden;
+  }
+  #app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+    height:100svh;
+    max-width:640px;
+    margin:0 auto;
+    background:var(--bg-app);
+    box-shadow:0 0 30px rgba(40,30,110,0.18);
+    position:relative;
+  }
+
+  /* ===== Map (full screen) ===== */
+  .map-wrap{ position:relative; flex:1; min-height:0; }
+  #map{ position:absolute; inset:0; }
+
+  /* ===== Minimal floating top bar ===== */
+  .mini-topbar{
+    position:absolute;
+    top:10px; left:10px; right:10px;
+    z-index:600;
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(22,19,39,0.6);
+    backdrop-filter:blur(12px);
+    border-radius:18px;
+    padding:8px 12px;
+    color:#fff;
+    box-shadow:var(--shadow-soft);
+  }
+  .mini-topbar .app-title{
+    font-size:15.5px; font-weight:800; display:flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .mini-btn-round{
+    width:34px; height:34px; border-radius:50%; border:none;
+    background:rgba(255,255,255,0.14); color:#fff; font-size:16px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:transform .2s var(--ease-pop), background .2s ease;
+  }
+  .mini-btn-round:active{ transform:scale(0.88); background:rgba(255,255,255,0.28); }
+
+  /* ===== Liquid circular navigation ===== */
+  .liquid-nav-wrap{
+    position:absolute;
+    top:66px; left:50%;
+    transform:translateX(-50%);
+    z-index:650;
+  }
+  .liquid-nav{
+    display:flex; gap:16px;
+    padding:8px;
+    background:rgba(255,255,255,0.4);
+    backdrop-filter:blur(14px);
+    border-radius:999px;
+    box-shadow:0 10px 30px rgba(30,20,80,0.18);
+  }
+  .liquid-btn{
+    position:relative;
+    width:54px; height:54px; border-radius:50%;
+    border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:23px; color:#fff;
+    isolation:isolate;
+    transition:transform .3s var(--ease-pop);
+  }
+  .liquid-btn .liquid-icon{ position:relative; z-index:2; filter:drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+  .liquid-btn::before{
+    content:'';
+    position:absolute; inset:0;
+    border-radius:50%;
+    z-index:1;
+    animation:liquidBreath 4.2s ease-in-out infinite;
+    transition:filter .3s ease, box-shadow .3s ease;
+  }
+  .liquid-btn:nth-child(1)::before{ animation-delay:0s; }
+  .liquid-btn:nth-child(2)::before{ animation-delay:.55s; }
+  .liquid-btn:nth-child(3)::before{ animation-delay:1.1s; }
+  .liquid-btn:nth-child(4)::before{ animation-delay:1.65s; }
+  @keyframes liquidBreath{
+    0%,100%{ border-radius:50%; transform:scale(1); }
+    50%{ border-radius:46% 54% 55% 45% / 55% 45% 55% 45%; transform:scale(1.06); }
+  }
+  .liquid-btn:active{ transform:scale(0.86); }
+  .liquid-btn:active::before{ filter:brightness(1.2); }
+
+  .liquid-btn.active::before{
+    animation:liquidPulseActive 1.3s ease-in-out infinite;
+    box-shadow:0 0 0 6px rgba(255,255,255,0.3);
+  }
+  @keyframes liquidPulseActive{
+    0%,100%{ transform:scale(1.06); filter:brightness(1.12); }
+    50%{ transform:scale(1.2); filter:brightness(1.32); }
+  }
+
+  .liquid-blue{ box-shadow:0 6px 16px rgba(83,71,224,0.45); }
+  .liquid-blue::before{ background:radial-gradient(circle at 30% 30%, #8B93FF, #5347E0); }
+  .liquid-amber{ box-shadow:0 6px 16px rgba(232,137,15,0.45); }
+  .liquid-amber::before{ background:radial-gradient(circle at 30% 30%, #FFC069, #E8890F); }
+  .liquid-purple{ box-shadow:0 6px 16px rgba(124,58,237,0.45); }
+  .liquid-purple::before{ background:radial-gradient(circle at 30% 30%, #C79CFF, #7C3AED); }
+  .liquid-navy{ box-shadow:0 6px 16px rgba(32,26,61,0.45); }
+  .liquid-navy::before{ background:radial-gradient(circle at 30% 30%, #5A527E, #201A3D); }
+
+  /* ===== Other floating map buttons (kept in their own spots) ===== */
+  .map-float-controls{
+    position:absolute; top:150px; right:14px; z-index:500;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .map-float-btn{
+    width:46px; height:46px; background:#fff; border:none; border-radius:16px;
+    display:flex; align-items:center; justify-content:center; font-size:19px; cursor:pointer;
+    box-shadow:var(--shadow-soft);
+    transition:transform .2s var(--ease-pop), box-shadow .25s ease, background .25s ease;
+  }
+  .map-float-btn:hover{ transform:translateY(-2px); box-shadow:var(--shadow-pop); }
+  .map-float-btn:active{ transform:scale(0.92); }
+  .map-float-btn.active-tool{
+    background:linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+    color:#fff;
+    box-shadow:0 6px 18px rgba(108,99,255,0.45);
+  }
+
+  .locate-btn{
+    position:absolute; bottom:16px; right:14px; z-index:500;
+    width:50px; height:50px;
+    background:linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
+    color:#fff; border:none; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer;
+    box-shadow:0 6px 18px rgba(108,99,255,0.4);
+    transition:transform .2s var(--ease-pop), box-shadow .25s ease;
+  }
+  .locate-btn:hover{ transform:translateY(-2px) scale(1.04); }
+  .locate-btn:active{ transform:scale(0.92); }
+  .locate-btn.locating{ animation:pulseLocate 1s infinite; }
+  @keyframes pulseLocate{
+    0%,100%{ box-shadow:0 6px 18px rgba(108,99,255,0.4); }
+    50%{ box-shadow:0 6px 26px rgba(108,99,255,0.75); }
+  }
+
+  .draw-hint{
+    position:absolute; top:230px; left:14px; right:14px; z-index:500;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff; text-align:center; padding:9px 10px; border-radius:12px;
+    font-size:13px; font-weight:700; display:none; box-shadow:var(--shadow-soft);
+  }
+  .draw-hint.visible{ display:block; animation:popIn .35s var(--ease-pop); }
+  @keyframes popIn{ from{ opacity:0; transform:translateY(-6px) scale(0.96); } to{ opacity:1; transform:translateY(0) scale(1); } }
+
+  .search-mode-badge{
+    position:absolute; top:230px; left:14px; right:14px; z-index:500;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%); color:#fff; text-align:center;
+    padding:10px 10px; border-radius:14px; font-size:13px; font-weight:700; display:none;
+    box-shadow:var(--shadow-pop);
+  }
+  .search-mode-badge.visible{ display:block; animation:popIn .3s var(--ease-pop); }
+  .search-area-circle{ fill:#6C63FF; fill-opacity:.10; stroke:#6C63FF; stroke-width:2; stroke-dasharray:6 6; }
+
+  /* ===== Google-Maps style permanent station label ===== */
+  .station-label{
+    background:transparent !important; border:none !important; box-shadow:none !important;
+    padding:0 2px !important; margin:0 !important;
+    font-family:"Segoe UI","Tahoma","Arial",sans-serif;
+    font-weight:700; font-size:12.5px; color:#20242c;
+    text-shadow:-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff, 0 0 4px #fff, 0 0 4px #fff;
+    white-space:nowrap; pointer-events:none;
+  }
+  .station-label::before{ display:none !important; }
+
+  /* ===== Bottom panel: taxi tools (only panel in the user app) ===== */
+  .bottom-panel{
+    flex-shrink:0; background:#fff; border-top:1px solid var(--border);
+    display:flex; max-height:40vh; overflow-y:auto;
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .taxi-panel{ flex-direction:column; padding:12px 14px; gap:10px; }
+  .taxi-info-card{
+    display:flex; justify-content:space-between; gap:8px;
+    background:linear-gradient(135deg, #F4F3FF 0%, #EAF7FF 100%);
+    border:1.5px solid var(--border); border-radius:16px; padding:14px 10px;
+    box-shadow:var(--shadow-soft);
+  }
+  .taxi-info-item{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; }
+  .taxi-info-label{ font-size:11.5px; color:var(--text-mid); font-weight:600; }
+  .taxi-info-value{ font-size:15px; font-weight:800; color:var(--text-dark); }
+  .taxi-buttons-row{ display:flex; gap:8px; }
+  .taxi-buttons-row .panel-btn{ margin-bottom:0; flex:1; }
+
+  .panel-btn{
+    width:100%; border:1.5px solid var(--border); background:#fff; color:var(--text-dark);
+    padding:10px 6px; border-radius:14px; font-size:12.5px; font-weight:700; margin-bottom:7px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;
+    transition:filter .15s ease, transform .15s var(--ease-pop), box-shadow .2s ease, background .2s ease;
+  }
+  .panel-btn:last-child{ margin-bottom:0; }
+  .panel-btn:active{ transform:scale(0.95); }
+  .panel-btn.solid-blue{ background:linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%); color:#fff; border-color:transparent; box-shadow:0 4px 14px rgba(108,99,255,0.3); }
+  .panel-btn:not(.solid-blue):hover{ background:var(--bg-app); border-color:var(--blue); }
+  .panel-btn.solid-blue:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+
+  ::-webkit-scrollbar{ width:6px; }
+  ::-webkit-scrollbar-thumb{ background:#ccc; border-radius:3px; }
+
+  /* ===== Modal ===== */
+  .modal-overlay{
+    position:absolute; inset:0; background:rgba(20,15,45,0.55); backdrop-filter:blur(2px);
+    z-index:3000; display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.visible{ display:flex; animation:overlayFade .2s ease; }
+  @keyframes overlayFade{ from{ opacity:0; } to{ opacity:1; } }
+  .modal-box{
+    background:#fff; border-radius:22px; width:100%; max-width:420px; max-height:80vh;
+    display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 20px 50px rgba(30,20,80,0.35);
+    animation:modalPop .32s var(--ease-pop);
+  }
+  @keyframes modalPop{ from{ opacity:0; transform:scale(0.88) translateY(10px); } to{ opacity:1; transform:scale(1) translateY(0); } }
+  .modal-header{
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%); color:#fff;
+    padding:16px 18px; font-size:16px; font-weight:800;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .modal-close{
+    background:rgba(255,255,255,0.12); border:none; color:#fff; font-size:18px; cursor:pointer; line-height:1;
+    width:30px; height:30px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .2s ease, transform .15s var(--ease-pop);
+  }
+  .modal-close:active{ transform:scale(0.9); background:rgba(255,255,255,0.25); }
+  .modal-body{ padding:16px; overflow-y:auto; }
+  .text-input{
+    width:100%; border:1.5px solid var(--border); border-radius:12px; padding:10px 12px;
+    font-size:14.5px; font-family:inherit; margin-bottom:16px;
+  }
+  .text-input:focus{ outline:2px solid var(--blue); border-color:var(--blue); }
+  .suggested-label{ font-size:12px; font-weight:700; color:var(--text-mid); margin-bottom:8px; }
+  .empty-note{ text-align:center; color:var(--text-mid); font-size:13.5px; padding:20px 8px; }
+
+  .line-card{
+    border:1.5px solid var(--border); border-radius:16px; padding:12px; margin-bottom:10px;
+    transition:box-shadow .2s ease, border-color .2s ease;
+  }
+  .line-card:hover{ box-shadow:var(--shadow-soft); border-color:#d8d4ff; }
+  .line-card-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .line-card-name{ font-weight:800; font-size:15px; display:flex; align-items:center; gap:8px; }
+  .line-color-dot{ width:12px; height:12px; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 0 3px rgba(0,0,0,0.05); }
+  .line-card-stations{ font-size:13px; color:var(--text-mid); line-height:1.7; }
+  .line-card-actions{ display:flex; gap:8px; margin-top:10px; }
+  .mini-btn{
+    flex:1; border:1.5px solid var(--border); background:#fff; padding:8px; border-radius:10px;
+    font-size:12.5px; font-weight:700; cursor:pointer;
+    transition:background .2s ease, transform .15s var(--ease-pop), border-color .2s ease;
+  }
+  .mini-btn:active{ transform:scale(0.95); }
+  .mini-btn:hover{ background:var(--bg-app); border-color:var(--blue); }
+
+  .search-results .line-card{ margin-bottom:9px; }
+  .search-radius-row{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+  .search-radius-row input{ flex:1; }
+  .search-radius-value{ min-width:62px; font-weight:800; color:var(--blue); text-align:center; }
+
+  /* ===== Toast ===== */
+  .toast{
+    position:absolute; bottom:20px; left:50%;
+    transform:translateX(-50%) translateY(24px) scale(0.9);
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%); color:#fff;
+    padding:12px 20px; border-radius:999px; font-size:13.5px; font-weight:700; z-index:4000;
+    opacity:0; box-shadow:0 10px 30px rgba(20,15,45,0.4);
+    transition:opacity .3s var(--ease-pop), transform .3s var(--ease-pop);
+    pointer-events:none; white-space:nowrap;
+  }
+  .toast.visible{ opacity:1; transform:translateX(-50%) translateY(0) scale(1); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="map-wrap">
+    <div id="map"></div>
+
+    <!-- Minimal floating top bar -->
+    <div class="mini-topbar">
+      <button class="mini-btn-round" id="btn-menu" title="القائمة">☰</button>
+      <div class="app-title">🚕🚌 وهران للنقل</div>
+      <button class="mini-btn-round" id="btn-avatar" title="الملف الشخصي">🧑‍💼</button>
+    </div>
+
+    <!-- Liquid circular navigation -->
+    <div class="liquid-nav-wrap">
+      <div class="liquid-nav">
+        <button class="liquid-btn liquid-blue" id="btn-user-buslist" title="قائمة الحافلات"><span class="liquid-icon">🚌</span></button>
+        <button class="liquid-btn liquid-amber" id="btn-user-taxi" title="وضع التاكسي"><span class="liquid-icon">🚕</span></button>
+        <button class="liquid-btn liquid-purple" id="btn-user-search" title="بحث"><span class="liquid-icon">🔍</span></button>
+        <button class="liquid-btn liquid-navy" id="btn-user-night" title="الوضع الليلي"><span class="liquid-icon">🌙</span></button>
+      </div>
+    </div>
+
+    <div class="draw-hint" id="draw-hint"></div>
+    <div class="search-mode-badge" id="search-mode-badge">🔎 اضغط على أي مكان أو طريق في الخريطة للبحث عن الحافلات التي تمر بالقرب منه</div>
+
+    <!-- Map type switch: stays in its own corner -->
+    <div class="map-float-controls">
+      <button class="map-float-btn" id="btn-satellite" title="نوع الخريطة">🛰️</button>
+    </div>
+
+    <!-- Locate me -->
+    <button class="locate-btn" id="btn-locate" title="تحديد موقعي الحالي">📍</button>
+  </div>
+
+  <!-- Bottom panel: taxi fare estimator (only shown in taxi mode) -->
+  <div class="bottom-panel taxi-panel" id="bottom-panel-taxi" style="display:none;">
+    <div class="taxi-info-card" id="taxi-info-card">
+      <div class="taxi-info-item">
+        <span class="taxi-info-label">📏 المسافة</span>
+        <span class="taxi-info-value" id="taxi-distance-value">—</span>
+      </div>
+      <div class="taxi-info-item">
+        <span class="taxi-info-label">⏱️ المدة التقديرية</span>
+        <span class="taxi-info-value" id="taxi-duration-value">—</span>
+      </div>
+      <div class="taxi-info-item">
+        <span class="taxi-info-label">💰 السعر التقديري</span>
+        <span class="taxi-info-value" id="taxi-price-value">—</span>
+      </div>
+    </div>
+    <div class="taxi-buttons-row">
+      <button class="panel-btn solid-blue" id="btn-taxi-new-line">➕ رسم مسار رحلتي</button>
+      <button class="panel-btn" id="btn-taxi-clear">🧹 مسح</button>
+    </div>
+  </div>
+
+  <!-- Modal: bus search by touching the map -->
+  <div class="modal-overlay" id="modal-bus-search">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>🔎 الحافلات التي تمر من هذه المنطقة</span>
+        <button class="modal-close" id="modal-bus-search-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:13px;color:var(--text-mid);margin-bottom:10px;line-height:1.7">حددنا منطقة حول النقطة التي لمستها. يمكنك تغيير نصف قطر البحث:</div>
+        <div class="search-radius-row">
+          <input type="range" id="search-radius" min="100" max="1500" step="100" value="500">
+          <span class="search-radius-value" id="search-radius-value">500 م</span>
+        </div>
+        <div id="bus-search-results" class="search-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: search type menu (place / touch) -->
+  <div class="modal-overlay" id="modal-search-menu">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>🔍 البحث</span>
+        <button class="modal-close" id="modal-search-menu-close">✕</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:10px;">
+        <button class="panel-btn solid-blue" id="search-option-place">📍 البحث عن مكان</button>
+        <button class="panel-btn solid-blue" id="search-option-touch">👆 البحث باللمس</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: quick search results (bus list or place search) -->
+  <div class="modal-overlay" id="modal-quick-search">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="quick-search-title">البحث</span>
+        <button class="modal-close" id="modal-quick-search-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="text-input" id="quick-search-input" placeholder="اكتب للبحث...">
+        <div id="quick-search-results" class="search-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+</div>
+
+<script>
+  /* =========================================================
+     MAP SETUP
+  ========================================================= */
+  const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([35.68, -0.60], 12);
+
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+
+  // Stations & bus lines are read live from Firestore — anything the admin adds, edits, or
+  // removes shows up here automatically within moments, no reload needed.
+  let stations = []; // {id, name, lat, lng, category:'primary'|'secondary'}
+  let savedLines = []; // {id, name, stations:[...], points:[...], color}
+  const stationMarkersById = {};
+
+  const STATION_MIN_ZOOM       = 12;
+  const STATION_ZOOM_THRESHOLD = 14;
+  const primaryStationsLayer   = L.layerGroup().addTo(map);
+  const secondaryStationsLayer = L.layerGroup();
+
+  const stationIcon = L.divIcon({ html: '', className: '', iconSize: [1,1], iconAnchor: [0,0] });
+
+  function renderStationMarker(station){
+    const targetLayer = station.category === 'secondary' ? secondaryStationsLayer : primaryStationsLayer;
+    const marker = L.marker([station.lat, station.lng], { icon: stationIcon })
+      .addTo(targetLayer)
+      .bindTooltip(station.name, { permanent:true, direction:'right', offset:[8,-10], className:'station-label', interactive:false });
+    if(station.id) stationMarkersById[station.id] = { marker, layer: targetLayer };
+  }
+
+  function removeStationMarker(id){
+    const entry = stationMarkersById[id];
+    if(entry){ entry.layer.removeLayer(entry.marker); delete stationMarkersById[id]; }
+  }
+
+  db.collection('stations').onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const id = change.doc.id;
+      if(change.type === 'removed'){
+        removeStationMarker(id);
+        stations = stations.filter(s => s.id !== id);
+        return;
+      }
+      const data = change.doc.data();
+      const station = { id, name: data.name, lat: data.lat, lng: data.lng, category: data.category || 'primary' };
+      removeStationMarker(id);
+      stations = stations.filter(s => s.id !== id);
+      stations.push(station);
+      renderStationMarker(station);
+    });
+  }, err => console.error('stations sync error', err));
+
+  function updateStationLayersVisibility(){
+    const zoom = map.getZoom();
+    const showPrimary   = zoom >= STATION_MIN_ZOOM && zoom <= STATION_ZOOM_THRESHOLD;
+    const showSecondary = zoom > STATION_ZOOM_THRESHOLD;
+    if(showPrimary){ if(!map.hasLayer(primaryStationsLayer)) map.addLayer(primaryStationsLayer); }
+    else { if(map.hasLayer(primaryStationsLayer)) map.removeLayer(primaryStationsLayer); }
+    if(showSecondary){ if(!map.hasLayer(secondaryStationsLayer)) map.addLayer(secondaryStationsLayer); }
+    else { if(map.hasLayer(secondaryStationsLayer)) map.removeLayer(secondaryStationsLayer); }
+  }
+  map.on('zoomend', updateStationLayersVisibility);
+  updateStationLayersVisibility();
+
+  /* =========================================================
+     BUS LINES DATA (view-only, synced live from Firestore)
+     Lines are NOT all drawn on the map at once — only the one the
+     user picks from the bus list / search results is shown, so the
+     map doesn't get cluttered with every route stacked on top of
+     each other. Picking a different line replaces the one shown.
+  ========================================================= */
+  const startIcon = L.divIcon({ html:'<div style="font-size:26px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));">🚌</div>', className:'', iconSize:[28,28], iconAnchor:[14,26] });
+  const endIcon   = L.divIcon({ html:'<div style="font-size:26px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));">🏁</div>', className:'', iconSize:[28,28], iconAnchor:[14,26] });
+
+  let currentlyDisplayedLineId = null;
+  let currentLineLayers = [];
+
+  function clearDisplayedLine(){
+    currentLineLayers.forEach(l => map.removeLayer(l));
+    currentLineLayers = [];
+    currentlyDisplayedLineId = null;
+  }
+
+  function displayLineOnMap(line){
+    clearDisplayedLine();
+    const poly = L.polyline(line.points, { color: line.color, weight: 5, lineCap:'round', lineJoin:'round' }).addTo(map);
+    poly.bindPopup(`<b>${line.name}</b><br>${line.stations.join('، ') || 'لا توجد محطات محددة'}`);
+    const startMarker = L.marker(line.points[0], { icon: startIcon }).addTo(map).bindPopup(`🚌 بداية: ${line.name}`);
+    const endMarker = L.marker(line.points[line.points.length - 1], { icon: endIcon }).addTo(map).bindPopup(`🏁 نهاية: ${line.name}`);
+    currentLineLayers = [poly, startMarker, endMarker];
+    currentlyDisplayedLineId = line.id;
+    map.fitBounds(L.latLngBounds(line.points), { padding: [50,50] });
+  }
+
+  db.collection('lines').onSnapshot(snapshot => {
+    snapshot.docChanges().forEach(change => {
+      const id = change.doc.id;
+      if(change.type === 'removed'){
+        savedLines = savedLines.filter(l => l.id !== id);
+        if(currentlyDisplayedLineId === id) clearDisplayedLine();
+        return;
+      }
+      const data = change.doc.data();
+      const line = { id, name: data.name, stations: data.stations || [], points: data.points || [], color: data.color || '#1a56e8' };
+      savedLines = savedLines.filter(l => l.id !== id);
+      savedLines.push(line);
+      // if this exact line is the one currently shown and it just got edited, redraw it fresh
+      if(currentlyDisplayedLineId === id) displayLineOnMap(line);
+    });
+  }, err => console.error('lines sync error', err));
+
+  /* =========================================================
+     UTILITIES
+  ========================================================= */
+  function haversine(lat1, lng1, lat2, lng2){
+    const R = 6371;
+    const dLat = (lat2-lat1) * Math.PI/180;
+    const dLng = (lng2-lng1) * Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  function distancePointToSegmentKm(p, a, b){
+    const t = ((p.lat-a.lat)*(b.lat-a.lat) + (p.lng-a.lng)*(b.lng-a.lng)) /
+              (((b.lat-a.lat)**2 + (b.lng-a.lng)**2) || 1e-9);
+    const tc = Math.max(0, Math.min(1, t));
+    const projLat = a.lat + tc*(b.lat-a.lat);
+    const projLng = a.lng + tc*(b.lng-a.lng);
+    return haversine(p.lat, p.lng, projLat, projLng);
+  }
+
+  /* =========================================================
+     TOAST
+  ========================================================= */
+  let toastTimer = null;
+  function showToast(msg){
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('visible'), 2800);
+  }
+
+  const drawHint = document.getElementById('draw-hint');
+
+  /* =========================================================
+     SEARCH BUSES BY TOUCHING THE MAP
+  ========================================================= */
+  let isBusSearchMode = false;
+  let searchCircle = null;
+  let searchPoint = null;
+  let searchRadiusMeters = 500;
+  const searchBadge = document.getElementById('search-mode-badge');
+  const btnSearch = document.getElementById('btn-user-search'); // the liquid 🔍 button reflects touch-search armed state
+  const modalBusSearch = document.getElementById('modal-bus-search');
+  const busSearchResults = document.getElementById('bus-search-results');
+  const searchRadiusInput = document.getElementById('search-radius');
+  const searchRadiusValue = document.getElementById('search-radius-value');
+
+  function distancePointToPolylineMeters(point, points){
+    if(!points || points.length < 2) return Infinity;
+    let minKm = Infinity;
+    for(let i=0;i<points.length-1;i++){
+      minKm = Math.min(minKm, distancePointToSegmentKm(point, points[i], points[i+1]));
+    }
+    return minKm * 1000;
+  }
+  function linesNearPoint(point, radiusMeters){
+    return savedLines.filter(line => distancePointToPolylineMeters(point, line.points) <= radiusMeters);
+  }
+  function renderBusSearchResults(point){
+    const matches = linesNearPoint(point, searchRadiusMeters);
+    busSearchResults.innerHTML = '';
+    if(!matches.length){
+      busSearchResults.innerHTML = '<div class="empty-note">🚌 لا توجد حافلات تمر داخل هذه المنطقة.<br>جرّب زيادة نصف قطر البحث.</div>';
+      return;
+    }
+    const title=document.createElement('div');
+    title.style.cssText='font-weight:800;margin-bottom:10px;color:var(--text-dark)';
+    title.textContent=`وجدنا ${matches.length} خط${matches.length===1?'':'وط'} يمر بالقرب من المكان المحدد`;
+    busSearchResults.appendChild(title);
+    matches.forEach(line=>{
+      const card=document.createElement('div'); card.className='line-card';
+      card.innerHTML=`<div class="line-card-top"><span class="line-card-name"><span class="line-color-dot" style="background:${line.color}"></span>${line.name}</span></div>
+      <div class="line-card-stations">${line.stations.length?'🚏 '+line.stations.join('، '):'لا توجد محطات محددة'}</div>
+      <div class="line-card-actions"><button class="mini-btn" data-search-action="focus" data-id="${line.id}">📍 عرض المسار</button></div>`;
+      busSearchResults.appendChild(card);
+    });
+  }
+  function startBusSearchMode(){
+    if(taxiDrawing) stopTaxiDrawing(true);
+    isBusSearchMode = true;
+    btnSearch.classList.add('active');
+    searchBadge.classList.add('visible');
+    map.getContainer().style.cursor = 'crosshair';
+    map.on('click', onBusSearchMapClick);
+  }
+  function stopBusSearchMode(){
+    isBusSearchMode = false;
+    map.off('click', onBusSearchMapClick);
+    map.getContainer().style.cursor = '';
+    searchBadge.classList.remove('visible');
+    btnSearch.classList.remove('active');
+    if(searchCircle){ map.removeLayer(searchCircle); searchCircle = null; }
+  }
+  function onBusSearchMapClick(e){
+    searchPoint = e.latlng;
+    if(searchCircle) map.removeLayer(searchCircle);
+    searchCircle = L.circle(searchPoint, { radius: searchRadiusMeters, className:'search-area-circle' }).addTo(map);
+    stopBusSearchMode();
+    renderBusSearchResults(searchPoint);
+    modalBusSearch.classList.add('visible');
+  }
+  searchRadiusInput.addEventListener('input', () => {
+    searchRadiusMeters = Number(searchRadiusInput.value);
+    searchRadiusValue.textContent = searchRadiusMeters >= 1000 ? (searchRadiusMeters/1000).toFixed(1)+' كم' : searchRadiusMeters+' م';
+    if(searchPoint){
+      if(searchCircle) searchCircle.setRadius(searchRadiusMeters);
+      renderBusSearchResults(searchPoint);
+    }
+  });
+  document.getElementById('modal-bus-search-close').addEventListener('click', () => {
+    modalBusSearch.classList.remove('visible');
+    if(searchCircle){ map.removeLayer(searchCircle); searchCircle = null; }
+  });
+  busSearchResults.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-search-action="focus"]'); if(!btn) return;
+    const line = savedLines.find(l => l.id === btn.dataset.id); if(!line) return;
+    displayLineOnMap(line);
+    modalBusSearch.classList.remove('visible');
+    if(searchCircle){ map.removeLayer(searchCircle); searchCircle = null; }
+  });
+
+  /* =========================================================
+     MAP TYPE (normal -> satellite)
+  ========================================================= */
+  const btnSatellite = document.getElementById('btn-satellite');
+  let mapMode = 'normal';
+  function applyMapMode(mode){
+    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer);
+    mapMode = mode;
+    if(mode === 'normal'){
+      osmLayer.addTo(map);
+      btnSatellite.textContent = '🛰️'; btnSatellite.title = 'خريطة القمر الصناعي';
+      btnSatellite.classList.remove('active-tool');
+      showToast('🗺️ الخريطة العادية');
+    } else if(mode === 'satellite'){
+      satelliteLayer.addTo(map);
+      btnSatellite.textContent = '🗺️'; btnSatellite.title = 'الخريطة العادية';
+      btnSatellite.classList.add('active-tool');
+      showToast('🛰️ خريطة القمر الصناعي');
+    }
+  }
+  btnSatellite.addEventListener('click', () => {
+    const order = ['normal', 'satellite'];
+    applyMapMode(order[(order.indexOf(mapMode) + 1) % order.length]);
+  });
+
+  /* =========================================================
+     DAY / NIGHT MODE (now part of the liquid nav)
+  ========================================================= */
+  const btnNight = document.getElementById('btn-user-night');
+  let isNightMode = false;
+  btnNight.addEventListener('click', () => {
+    isNightMode = !isNightMode;
+    const tilePane = document.querySelector('.leaflet-tile-pane');
+    if(tilePane){
+      tilePane.style.filter = isNightMode ? 'invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)' : '';
+      tilePane.style.transition = 'filter .3s';
+    }
+    btnNight.querySelector('.liquid-icon').textContent = isNightMode ? '☀️' : '🌙';
+    btnNight.classList.toggle('active', isNightMode);
+    showToast(isNightMode ? '🌙 تم تفعيل الوضع الليلي' : '☀️ تم تفعيل الوضع النهاري');
+    if(taxiPoints.length >= 2 && !taxiDrawing) calculateAndShowTaxiFare();
+  });
+
+  /* =========================================================
+     LOCATE ME
+  ========================================================= */
+  const btnLocate = document.getElementById('btn-locate');
+  let userLocationMarker = null;
+  let userAccuracyCircle = null;
+  const userLocationIcon = L.divIcon({
+    html:'<div style="width:16px;height:16px;background:#6C63FF;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 5px rgba(108,99,255,0.25);"></div>',
+    className:'', iconSize:[16,16], iconAnchor:[8,8]
+  });
+  btnLocate.addEventListener('click', () => {
+    if(!navigator.geolocation){ showToast('⚠️ متصفحك لا يدعم تحديد الموقع'); return; }
+    btnLocate.classList.add('locating');
+    btnLocate.textContent = '⏳';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        if(userLocationMarker) map.removeLayer(userLocationMarker);
+        if(userAccuracyCircle) map.removeLayer(userAccuracyCircle);
+        userLocationMarker = L.marker([latitude, longitude], { icon:userLocationIcon, zIndexOffset:1000 }).addTo(map).bindPopup('موقعك الحالي');
+        userAccuracyCircle = L.circle([latitude, longitude], { radius:accuracy, color:'#6C63FF', fillColor:'#6C63FF', fillOpacity:0.12, weight:1 }).addTo(map);
+        map.setView([latitude, longitude], 16);
+        btnLocate.classList.remove('locating');
+        btnLocate.textContent = '📍';
+        showToast('📍 تم تحديد موقعك الحالي');
+      },
+      () => {
+        btnLocate.classList.remove('locating');
+        btnLocate.textContent = '📍';
+        showToast('⚠️ تعذّر الحصول على الموقع، تأكد من تفعيل صلاحية الموقع للمتصفح');
+      },
+      { enableHighAccuracy:true, timeout:10000 }
+    );
+  });
+
+  /* =========================================================
+     SEARCH MENU (🔍 liquid button): place / touch
+  ========================================================= */
+  const modalSearchMenu  = document.getElementById('modal-search-menu');
+  const modalQuickSearch = document.getElementById('modal-quick-search');
+  const quickSearchTitle = document.getElementById('quick-search-title');
+  const quickSearchInput = document.getElementById('quick-search-input');
+  const quickSearchResultsBox = document.getElementById('quick-search-results');
+  let quickSearchMode = null; // 'bus' | 'place'
+  let osmSearchDebounceTimer = null;
+  let lastOsmResults = [];
+  let osmResultMarker = null;
+
+  document.getElementById('btn-user-search').addEventListener('click', () => {
+    modalSearchMenu.classList.add('visible');
+  });
+  document.getElementById('modal-search-menu-close').addEventListener('click', () => {
+    modalSearchMenu.classList.remove('visible');
+  });
+
+  function openQuickSearch(mode){
+    clearTimeout(osmSearchDebounceTimer);
+    quickSearchMode = mode;
+    quickSearchTitle.textContent = mode === 'bus' ? '🚌 قائمة الحافلات' : '📍 البحث عن مكان';
+    quickSearchInput.placeholder = mode === 'bus' ? 'اكتب اسم الخط أو الحافلة...' : 'اكتب اسم المكان، الحي، أو الشارع...';
+    quickSearchInput.value = '';
+    renderQuickSearchResults('');
+    modalQuickSearch.classList.add('visible');
+    setTimeout(() => quickSearchInput.focus(), 50);
+  }
+
+  function renderQuickSearchResults(query){
+    const q = query.trim().toLowerCase();
+
+    if(quickSearchMode === 'bus'){
+      quickSearchResultsBox.innerHTML = '';
+      const matches = savedLines.filter(l => l.name.toLowerCase().includes(q));
+      if(matches.length === 0){
+        quickSearchResultsBox.innerHTML = '<div class="empty-note">🚌 لا توجد خطوط بعد</div>';
+        return;
+      }
+      matches.forEach(line => {
+        const card = document.createElement('div');
+        card.className = 'line-card';
+        card.innerHTML = `
+          <div class="line-card-top">
+            <span class="line-card-name"><span class="line-color-dot" style="background:${line.color}"></span>${line.name}</span>
+          </div>
+          <div class="line-card-stations">${line.stations.length ? '🚏 ' + line.stations.join('، ') : 'لا توجد محطات محددة'}</div>
+          <div class="line-card-actions"><button class="mini-btn" data-quick-focus-line="${line.id}">📍 عرض على الخريطة</button></div>
+        `;
+        quickSearchResultsBox.appendChild(card);
+      });
+
+    } else if(quickSearchMode === 'place'){
+      quickSearchResultsBox.innerHTML = `
+        <div class="suggested-label">📍 أماكن معروفة</div>
+        <div id="quick-search-saved-section"></div>
+        <div class="suggested-label" style="margin-top:14px;">🌍 أماكن من الخريطة</div>
+        <div id="quick-search-osm-section"></div>
+      `;
+      const savedSection = document.getElementById('quick-search-saved-section');
+      const matches = stations.filter(s => s.name.toLowerCase().includes(q));
+      if(matches.length === 0){
+        savedSection.innerHTML = '<div class="empty-note">لا توجد نتائج مطابقة</div>';
+      } else {
+        matches.forEach(st => {
+          const card = document.createElement('div');
+          card.className = 'line-card';
+          card.innerHTML = `
+            <div class="line-card-top"><span class="line-card-name">📍 ${st.name}</span></div>
+            <div class="line-card-actions"><button class="mini-btn" data-quick-focus-place="${st.id}">🗺️ الذهاب إلى المكان</button></div>
+          `;
+          savedSection.appendChild(card);
+        });
+      }
+      scheduleOsmSearch(query);
+    }
+  }
+
+  function scheduleOsmSearch(query){
+    clearTimeout(osmSearchDebounceTimer);
+    const q = query.trim();
+    const osmSection = document.getElementById('quick-search-osm-section');
+    if(!osmSection) return;
+    if(q.length < 2){
+      osmSection.innerHTML = '<div class="empty-note">اكتب حرفين على الأقل للبحث في الخريطة</div>';
+      return;
+    }
+    osmSection.innerHTML = '<div class="empty-note">⏳ جارٍ البحث في الخريطة...</div>';
+    osmSearchDebounceTimer = setTimeout(() => fetchOsmPlaceResults(q), 500);
+  }
+
+  async function fetchOsmPlaceResults(query){
+    const osmSection = document.getElementById('quick-search-osm-section');
+    if(!osmSection) return;
+    try {
+      const viewbox = '-1.2,36.1,0.4,35.2';
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=6&accept-language=ar&viewbox=${viewbox}&bounded=0`;
+      const response = await fetch(url);
+      if(!response.ok) throw new Error('bad response');
+      const results = await response.json();
+      if(quickSearchMode !== 'place') return;
+      const currentOsmSection = document.getElementById('quick-search-osm-section');
+      if(!currentOsmSection) return;
+      lastOsmResults = results || [];
+      if(lastOsmResults.length === 0){
+        currentOsmSection.innerHTML = '<div class="empty-note">🌍 لا توجد نتائج من الخريطة</div>';
+        return;
+      }
+      currentOsmSection.innerHTML = '';
+      lastOsmResults.forEach((place, idx) => {
+        const shortName = place.display_name.split(',').slice(0, 2).join('،');
+        const card = document.createElement('div');
+        card.className = 'line-card';
+        card.innerHTML = `
+          <div class="line-card-top"><span class="line-card-name">🌍 ${shortName}</span></div>
+          <div class="line-card-stations">${place.display_name}</div>
+          <div class="line-card-actions"><button class="mini-btn" data-quick-focus-osm="${idx}">🗺️ الذهاب إلى المكان</button></div>
+        `;
+        currentOsmSection.appendChild(card);
+      });
+    } catch(err){
+      const currentOsmSection = document.getElementById('quick-search-osm-section');
+      if(currentOsmSection){
+        currentOsmSection.innerHTML = '<div class="empty-note">⚠️ تعذّر الاتصال بخدمة بحث الأماكن، تحقق من الإنترنت</div>';
+      }
+    }
+  }
+
+  quickSearchInput.addEventListener('input', () => renderQuickSearchResults(quickSearchInput.value));
+  document.getElementById('modal-quick-search-close').addEventListener('click', () => {
+    clearTimeout(osmSearchDebounceTimer);
+    modalQuickSearch.classList.remove('visible');
+  });
+
+  quickSearchResultsBox.addEventListener('click', (e) => {
+    const lineBtn = e.target.closest('[data-quick-focus-line]');
+    if(lineBtn){
+      const line = savedLines.find(l => l.id === lineBtn.dataset.quickFocusLine);
+      if(line){
+        displayLineOnMap(line);
+        modalQuickSearch.classList.remove('visible');
+      }
+      return;
+    }
+    const placeBtn = e.target.closest('[data-quick-focus-place]');
+    if(placeBtn){
+      const st = stations.find(s => s.id === placeBtn.dataset.quickFocusPlace);
+      if(st){
+        const targetZoom = st.category === 'secondary' ? STATION_ZOOM_THRESHOLD + 2 : Math.round((STATION_MIN_ZOOM + STATION_ZOOM_THRESHOLD) / 2);
+        map.setView([st.lat, st.lng], targetZoom);
+        modalQuickSearch.classList.remove('visible');
+      }
+      return;
+    }
+    const osmBtn = e.target.closest('[data-quick-focus-osm]');
+    if(osmBtn){
+      const place = lastOsmResults[Number(osmBtn.dataset.quickFocusOsm)];
+      if(place){
+        const lat = parseFloat(place.lat), lon = parseFloat(place.lon);
+        if(osmResultMarker) map.removeLayer(osmResultMarker);
+        const osmPinIcon = L.divIcon({ html:'<div style="font-size:28px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));">📍</div>', className:'', iconSize:[30,30], iconAnchor:[15,28] });
+        osmResultMarker = L.marker([lat, lon], { icon: osmPinIcon }).addTo(map).bindPopup(place.display_name).openPopup();
+        map.setView([lat, lon], 16);
+        modalQuickSearch.classList.remove('visible');
+      }
+      return;
+    }
+  });
+
+  document.getElementById('search-option-place').addEventListener('click', () => {
+    modalSearchMenu.classList.remove('visible');
+    openQuickSearch('place');
+  });
+  document.getElementById('search-option-touch').addEventListener('click', () => {
+    modalSearchMenu.classList.remove('visible');
+    startBusSearchMode();
+    showToast('👆 المس أي مكان على الخريطة للبحث عن الحافلات القريبة منه');
+  });
+
+  // 🚌 liquid button: bus list, reusing the same quick-search UI in "bus" mode
+  document.getElementById('btn-user-buslist').addEventListener('click', () => openQuickSearch('bus'));
+
+  /* =========================================================
+     TAXI FARE ESTIMATOR (draw a route to get distance/time/price)
+  ========================================================= */
+  let taxiDrawing = false;
+  // Fare settings are read live from Firestore (settings/taxiFares); sensible defaults are
+  // used until it loads (or if the document doesn't exist yet).
+  let taxiFares = { dayBoarding: 20, dayPerKm: 18, nightBoarding: 30, nightPerKm: 25 };
+  db.collection('settings').doc('taxiFares').onSnapshot(doc => {
+    if(doc.exists){
+      const d = doc.data();
+      taxiFares = {
+        dayBoarding:   typeof d.dayBoarding   === 'number' ? d.dayBoarding   : taxiFares.dayBoarding,
+        dayPerKm:      typeof d.dayPerKm      === 'number' ? d.dayPerKm      : taxiFares.dayPerKm,
+        nightBoarding: typeof d.nightBoarding === 'number' ? d.nightBoarding : taxiFares.nightBoarding,
+        nightPerKm:    typeof d.nightPerKm    === 'number' ? d.nightPerKm    : taxiFares.nightPerKm
+      };
+      if(taxiPoints.length >= 2 && !taxiDrawing) calculateAndShowTaxiFare();
+    }
+  }, err => console.error('taxi fares sync error', err));
+
+  let taxiPoints = [];
+  const taxiColor = '#FF9F43';
+  const taxiLayerGroup = L.layerGroup().addTo(map);
+
+  const btnTaxiNewLine = document.getElementById('btn-taxi-new-line');
+  const btnTaxiClear   = document.getElementById('btn-taxi-clear');
+  const taxiDistanceValue = document.getElementById('taxi-distance-value');
+  const taxiDurationValue = document.getElementById('taxi-duration-value');
+  const taxiPriceValue    = document.getElementById('taxi-price-value');
+
+  const taxiVertexIcon = () => L.divIcon({
+    html: `<div style="width:10px;height:10px;background:${taxiColor};border:2px solid #fff;border-radius:50%;box-shadow:0 0 3px rgba(0,0,0,.4);"></div>`,
+    className: '', iconSize: [10,10], iconAnchor: [5,5]
+  });
+  const taxiStartIcon = L.divIcon({ html:'<div style="font-size:24px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));">🚕</div>', className:'', iconSize:[26,26], iconAnchor:[13,24] });
+  const taxiEndIcon   = L.divIcon({ html:'<div style="font-size:24px; filter:drop-shadow(0 2px 3px rgba(0,0,0,.4));">🏁</div>', className:'', iconSize:[26,26], iconAnchor:[13,24] });
+
+  function resetTaxiInfoCard(){
+    taxiDistanceValue.textContent = '—';
+    taxiDurationValue.textContent = '—';
+    taxiPriceValue.textContent = '—';
+  }
+
+  function startTaxiDrawing(){
+    if(isBusSearchMode) stopBusSearchMode();
+    taxiDrawing = true;
+    taxiPoints = [];
+    taxiLayerGroup.clearLayers();
+    resetTaxiInfoCard();
+    btnTaxiNewLine.textContent = '⏹️ إنهاء الرسم';
+    drawHint.textContent = 'اضغط على نقطة الانطلاق ثم نقطة الوصول (يمكن إضافة نقاط أكثر)، ثم اضغط "إنهاء الرسم"';
+    drawHint.classList.add('visible');
+    map.getContainer().style.cursor = 'crosshair';
+    map.on('click', onMapClickTaxiDrawing);
+  }
+  function onMapClickTaxiDrawing(e){
+    taxiPoints.push(e.latlng);
+    redrawTaxiTempLine();
+  }
+  function redrawTaxiTempLine(){
+    taxiLayerGroup.clearLayers();
+    if(taxiPoints.length >= 2){
+      L.polyline(taxiPoints, { color: taxiColor, weight:5, lineCap:'round', lineJoin:'round', dashArray:'2 8' }).addTo(taxiLayerGroup);
+    }
+    taxiPoints.forEach(p => L.marker(p, { icon: taxiVertexIcon() }).addTo(taxiLayerGroup));
+  }
+  function stopTaxiDrawing(silent){
+    taxiDrawing = false;
+    map.off('click', onMapClickTaxiDrawing);
+    map.getContainer().style.cursor = '';
+    btnTaxiNewLine.textContent = '➕ رسم مسار رحلتي';
+    drawHint.classList.remove('visible');
+
+    if(silent) return;
+
+    if(taxiPoints.length < 2){
+      showToast('⚠️ ارسم نقطتين على الأقل (انطلاق ووصول)');
+      taxiLayerGroup.clearLayers();
+      taxiPoints = [];
+      resetTaxiInfoCard();
+      return;
+    }
+    taxiLayerGroup.clearLayers();
+    L.polyline(taxiPoints, { color: taxiColor, weight:5, lineCap:'round', lineJoin:'round' }).addTo(taxiLayerGroup);
+    L.marker(taxiPoints[0], { icon: taxiStartIcon }).addTo(taxiLayerGroup);
+    L.marker(taxiPoints[taxiPoints.length - 1], { icon: taxiEndIcon }).addTo(taxiLayerGroup);
+    calculateAndShowTaxiFare();
+  }
+
+  btnTaxiNewLine.addEventListener('click', () => {
+    if(!taxiDrawing) startTaxiDrawing(); else stopTaxiDrawing();
+  });
+  btnTaxiClear.addEventListener('click', () => {
+    if(taxiDrawing){
+      map.off('click', onMapClickTaxiDrawing);
+      map.getContainer().style.cursor = '';
+      taxiDrawing = false;
+      btnTaxiNewLine.textContent = '➕ رسم مسار رحلتي';
+      drawHint.classList.remove('visible');
+    }
+    taxiPoints = [];
+    taxiLayerGroup.clearLayers();
+    resetTaxiInfoCard();
+    showToast('🧹 تم مسح المسار');
+  });
+
+  function calculateAndShowTaxiFare(){
+    let distanceKm = 0;
+    for(let i = 0; i < taxiPoints.length - 1; i++){
+      distanceKm += haversine(taxiPoints[i].lat, taxiPoints[i].lng, taxiPoints[i+1].lat, taxiPoints[i+1].lng);
+    }
+    const avgSpeedKmh = 28;
+    const durationMin = (distanceKm / avgSpeedKmh) * 60;
+    const boardingFee = isNightMode ? taxiFares.nightBoarding : taxiFares.dayBoarding;
+    const ratePerKm    = isNightMode ? taxiFares.nightPerKm    : taxiFares.dayPerKm;
+    const price = boardingFee + distanceKm * ratePerKm;
+    taxiDistanceValue.textContent = distanceKm.toFixed(2) + ' كم';
+    taxiDurationValue.textContent = Math.max(1, Math.round(durationMin)) + ' دقيقة';
+    taxiPriceValue.textContent = Math.round(price) + ' دج';
+    showToast('✅ تم حساب المسافة والسعر');
+  }
+
+  /* =========================================================
+     TAXI MODE TOGGLE (🚕 liquid button)
+  ========================================================= */
+  const btnUserTaxi = document.getElementById('btn-user-taxi');
+  const bottomPanelTaxi = document.getElementById('bottom-panel-taxi');
+  let taxiPanelActive = false;
+
+  function setTaxiPanelActive(active){
+    taxiPanelActive = active;
+    if(active){
+      bottomPanelTaxi.style.display = 'flex';
+      btnUserTaxi.querySelector('.liquid-icon').textContent = '🚌';
+      btnUserTaxi.classList.add('active');
+      btnUserTaxi.title = 'الرجوع لوضع الحافلات';
+      if(isBusSearchMode) stopBusSearchMode();
+      clearDisplayedLine(); // hide any bus route currently shown so it doesn't clutter taxi mode
+    } else {
+      bottomPanelTaxi.style.display = 'none';
+      btnUserTaxi.querySelector('.liquid-icon').textContent = '🚕';
+      btnUserTaxi.classList.remove('active');
+      btnUserTaxi.title = 'وضع التاكسي';
+      if(taxiDrawing) stopTaxiDrawing(true);
+    }
+  }
+  btnUserTaxi.addEventListener('click', () => setTaxiPanelActive(!taxiPanelActive));
+
+  /* =========================================================
+     MISC TOP BAR BUTTONS
+  ========================================================= */
+  document.getElementById('btn-menu').addEventListener('click', () => console.log('فتح القائمة الجانبية'));
+  document.getElementById('btn-avatar').addEventListener('click', () => console.log('فتح الملف الشخصي'));
+
+  /* =========================================================
+     PWA: register the service worker (needed for "installable" app / APK packaging)
+  ========================================================= */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(err => console.warn('SW registration failed', err));
+    });
+  }
+</script>
+</body>
+</html>
