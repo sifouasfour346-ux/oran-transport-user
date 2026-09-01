@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.sifouasfour346_ux.twa",
+        "sha256_cert_fingerprints": ["86:62:78:4A:7E:8C:0B:C8:72:D2:AA:B1:1A:00:0E:D1:91:4A:63:6B:B2:CD:D9:1C:F0:E8:42:65:3A:8D:21:7D"]
+      }
+    }]
