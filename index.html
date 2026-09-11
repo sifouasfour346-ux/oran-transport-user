@@ -299,6 +299,8 @@
   .line-card-name{ font-weight:800; font-size:15px; display:flex; align-items:center; gap:8px; }
   .line-color-dot{ width:12px; height:12px; border-radius:50%; display:inline-block; flex-shrink:0; box-shadow:0 0 0 3px rgba(0,0,0,0.05); }
   .line-card-stations{ font-size:13px; color:var(--text-mid); line-height:1.7; }
+  .bus-badge-row{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:8px; font-size:12.5px; }
+  .bus-badge{ color:#fff; font-weight:700; font-size:11.5px; padding:3px 9px; border-radius:999px; box-shadow:0 1px 3px rgba(0,0,0,0.25); }
   .line-card-actions{ display:flex; gap:8px; margin-top:10px; }
   .mini-btn{
     flex:1; border:1.5px solid var(--border); background:#fff; padding:8px; border-radius:10px;
@@ -439,27 +441,45 @@
   ========================================================= */
   const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([35.68, -0.60], 12);
 
+  // Declared early (before station rendering below) so updateStationLayersVisibility()
+  // can gate station visibility on the current map type from the very first call.
+  let mapMode = 'normal'; // 'normal' | 'satellite'
+
   const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
   const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+  // Transparent overlay of place/street names & boundaries — paired with satellite so it behaves like "Hybrid" mode
+  const satelliteLabelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, pane: 'overlayPane' });
 
   // Stations & bus lines are read live from Firestore — anything the admin adds, edits, or
   // removes shows up here automatically within moments, no reload needed.
-  let stations = []; // {id, name, lat, lng, category:'primary'|'secondary'}
+  let stations = []; // {id, name, lat, lng, category:'primary'|'secondary'|'permanent', color, mapType}
   let savedLines = []; // {id, name, stations:[...], points:[...], color}
   const stationMarkersById = {};
 
+  // Each station is tagged with the map type that was active when it was created
+  // (mapType: 'normal' | 'satellite') and only ever shows while that same map type is active.
+  // Within whichever set is active, primary/secondary still follow the zoom rules below;
+  // permanent always shows (any zoom) as long as its map type matches the current one.
   const STATION_MIN_ZOOM       = 12;
   const STATION_ZOOM_THRESHOLD = 14;
-  const primaryStationsLayer   = L.layerGroup().addTo(map);
-  const secondaryStationsLayer = L.layerGroup();
+  const stationLayers = {
+    normal:    { primary: L.layerGroup(), secondary: L.layerGroup(), permanent: L.layerGroup() },
+    satellite: { primary: L.layerGroup(), secondary: L.layerGroup(), permanent: L.layerGroup() }
+  };
 
   const stationIcon = L.divIcon({ html: '', className: '', iconSize: [1,1], iconAnchor: [0,0] });
 
   function renderStationMarker(station){
-    const targetLayer = station.category === 'secondary' ? secondaryStationsLayer : primaryStationsLayer;
+    const mapType = station.mapType === 'satellite' ? 'satellite' : 'normal';
+    const category = (station.category === 'secondary' || station.category === 'permanent') ? station.category : 'primary';
+    const targetLayer = stationLayers[mapType][category];
+
+    const labelColor = station.color || '#000000';
     const marker = L.marker([station.lat, station.lng], { icon: stationIcon })
       .addTo(targetLayer)
-      .bindTooltip(station.name, { permanent:true, direction:'right', offset:[8,-10], className:'station-label', interactive:false });
+      .bindTooltip(`<span style="color:${labelColor}">${station.name}</span>`, {
+        permanent: true, direction: 'right', offset: [8,-10], className: 'station-label', interactive: false
+      });
     if(station.id) stationMarkersById[station.id] = { marker, layer: targetLayer };
   }
 
@@ -477,7 +497,12 @@
         return;
       }
       const data = change.doc.data();
-      const station = { id, name: data.name, lat: data.lat, lng: data.lng, category: data.category || 'primary' };
+      const station = {
+        id, name: data.name, lat: data.lat, lng: data.lng,
+        category: data.category || 'primary',
+        color: data.color || '#000000',
+        mapType: data.mapType || 'normal'
+      };
       removeStationMarker(id);
       stations = stations.filter(s => s.id !== id);
       stations.push(station);
@@ -487,12 +512,26 @@
 
   function updateStationLayersVisibility(){
     const zoom = map.getZoom();
+    const activeType = mapMode === 'satellite' ? 'satellite' : 'normal';
+    const inactiveType = activeType === 'satellite' ? 'normal' : 'satellite';
+
+    // fully hide every layer belonging to the map type that isn't currently active
+    Object.values(stationLayers[inactiveType]).forEach(layer => {
+      if(map.hasLayer(layer)) map.removeLayer(layer);
+    });
+
+    const active = stationLayers[activeType];
     const showPrimary   = zoom >= STATION_MIN_ZOOM && zoom <= STATION_ZOOM_THRESHOLD;
     const showSecondary = zoom > STATION_ZOOM_THRESHOLD;
-    if(showPrimary){ if(!map.hasLayer(primaryStationsLayer)) map.addLayer(primaryStationsLayer); }
-    else { if(map.hasLayer(primaryStationsLayer)) map.removeLayer(primaryStationsLayer); }
-    if(showSecondary){ if(!map.hasLayer(secondaryStationsLayer)) map.addLayer(secondaryStationsLayer); }
-    else { if(map.hasLayer(secondaryStationsLayer)) map.removeLayer(secondaryStationsLayer); }
+
+    if(showPrimary){ if(!map.hasLayer(active.primary)) map.addLayer(active.primary); }
+    else { if(map.hasLayer(active.primary)) map.removeLayer(active.primary); }
+
+    if(showSecondary){ if(!map.hasLayer(active.secondary)) map.addLayer(active.secondary); }
+    else { if(map.hasLayer(active.secondary)) map.removeLayer(active.secondary); }
+
+    // permanent ignores zoom entirely, but still only for the currently active map type
+    if(!map.hasLayer(active.permanent)) map.addLayer(active.permanent);
   }
   map.on('zoomend', updateStationLayersVisibility);
   updateStationLayersVisibility();
@@ -536,7 +575,7 @@
         return;
       }
       const data = change.doc.data();
-      const line = { id, name: data.name, stations: data.stations || [], points: data.points || [], color: data.color || '#1a56e8' };
+      const line = { id, name: data.name, stations: data.stations || [], points: data.points || [], color: data.color || '#1a56e8', order: typeof data.order === 'number' ? data.order : 0 };
       savedLines = savedLines.filter(l => l.id !== id);
       savedLines.push(line);
       // if this exact line is the one currently shown and it just got edited, redraw it fresh
@@ -602,6 +641,23 @@
   function linesNearPoint(point, radiusMeters){
     return savedLines.filter(line => distancePointToPolylineMeters(point, line.points) <= radiusMeters);
   }
+
+  // Better matching for a named station: a line counts as passing through it if either
+  // (a) its drawn path comes within radiusMeters of the station, OR
+  // (b) the station's name was explicitly registered as one of the line's stops —
+  // this catches real stops even when the hand-drawn path sits a bit off from the pin.
+  function linesForStation(station, radiusMeters){
+    const stationNameNorm = (station.name || '').trim().toLowerCase();
+    return savedLines.filter(line => {
+      const byDistance = distancePointToPolylineMeters({ lat: station.lat, lng: station.lng }, line.points) <= radiusMeters;
+      const byRegisteredStop = (line.stations || []).some(s => {
+        const n = s.trim().toLowerCase();
+        return n === stationNameNorm || n.includes(stationNameNorm) || stationNameNorm.includes(n);
+      });
+      return byDistance || byRegisteredStop;
+    });
+  }
+
   function renderBusSearchResults(point){
     const matches = linesNearPoint(point, searchRadiusMeters);
     busSearchResults.innerHTML = '';
@@ -669,9 +725,8 @@
      MAP TYPE (normal -> satellite)
   ========================================================= */
   const btnSatellite = document.getElementById('btn-satellite');
-  let mapMode = 'normal';
   function applyMapMode(mode){
-    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer);
+    map.removeLayer(osmLayer); map.removeLayer(satelliteLayer); map.removeLayer(satelliteLabelsLayer);
     mapMode = mode;
     if(mode === 'normal'){
       osmLayer.addTo(map);
@@ -680,10 +735,13 @@
       showToast('🗺️ الخريطة العادية');
     } else if(mode === 'satellite'){
       satelliteLayer.addTo(map);
+      satelliteLabelsLayer.addTo(map);
       btnSatellite.textContent = '🗺️'; btnSatellite.title = 'الخريطة العادية';
       btnSatellite.classList.add('active-tool');
-      showToast('🛰️ خريطة القمر الصناعي');
+      showToast('🛰️ خريطة القمر الصناعي مع أسماء الأماكن');
     }
+    // stations are tagged by the map type they were created on — refresh immediately on switch
+    updateStationLayersVisibility();
   }
   btnSatellite.addEventListener('click', () => {
     const order = ['normal', 'satellite'];
@@ -779,7 +837,9 @@
 
     if(quickSearchMode === 'bus'){
       quickSearchResultsBox.innerHTML = '';
-      const matches = savedLines.filter(l => l.name.toLowerCase().includes(q));
+      const matches = savedLines
+        .filter(l => l.name.toLowerCase().includes(q))
+        .sort((a,b) => (a.order ?? 0) - (b.order ?? 0));
       if(matches.length === 0){
         quickSearchResultsBox.innerHTML = '<div class="empty-note">🚌 لا توجد خطوط بعد</div>';
         return;
@@ -810,10 +870,12 @@
         savedSection.innerHTML = '<div class="empty-note">لا توجد نتائج مطابقة</div>';
       } else {
         matches.forEach(st => {
+          const nearbyLines = linesForStation(st, PLACE_SEARCH_BUS_RADIUS_M);
           const card = document.createElement('div');
           card.className = 'line-card';
           card.innerHTML = `
             <div class="line-card-top"><span class="line-card-name">📍 ${st.name}</span></div>
+            ${renderNearbyLineBadges(nearbyLines)}
             <div class="line-card-actions"><button class="mini-btn" data-quick-focus-place="${st.id}">🗺️ الذهاب إلى المكان</button></div>
           `;
           savedSection.appendChild(card);
@@ -821,6 +883,15 @@
       }
       scheduleOsmSearch(query);
     }
+  }
+
+  // How far (in meters) from a searched place we still count a bus line as "passing through it"
+  const PLACE_SEARCH_BUS_RADIUS_M = 500;
+
+  function renderNearbyLineBadges(lines){
+    if(!lines.length) return '<div class="line-card-stations" style="margin-top:6px;">🚫 لا توجد حافلات قريبة من هذا المكان</div>';
+    const chips = lines.map(l => `<span class="bus-badge" style="background:${l.color}">${l.name}</span>`).join('');
+    return `<div class="bus-badge-row">🚌 ${chips}</div>`;
   }
 
   function scheduleOsmSearch(query){
@@ -856,11 +927,13 @@
       currentOsmSection.innerHTML = '';
       lastOsmResults.forEach((place, idx) => {
         const shortName = place.display_name.split(',').slice(0, 2).join('،');
+        const nearbyLines = linesNearPoint({ lat: parseFloat(place.lat), lng: parseFloat(place.lon) }, PLACE_SEARCH_BUS_RADIUS_M);
         const card = document.createElement('div');
         card.className = 'line-card';
         card.innerHTML = `
           <div class="line-card-top"><span class="line-card-name">🌍 ${shortName}</span></div>
           <div class="line-card-stations">${place.display_name}</div>
+          ${renderNearbyLineBadges(nearbyLines)}
           <div class="line-card-actions"><button class="mini-btn" data-quick-focus-osm="${idx}">🗺️ الذهاب إلى المكان</button></div>
         `;
         currentOsmSection.appendChild(card);
@@ -893,6 +966,7 @@
     if(placeBtn){
       const st = stations.find(s => s.id === placeBtn.dataset.quickFocusPlace);
       if(st){
+        if(mapMode !== st.mapType) applyMapMode(st.mapType === 'satellite' ? 'satellite' : 'normal');
         const targetZoom = st.category === 'secondary' ? STATION_ZOOM_THRESHOLD + 2 : Math.round((STATION_MIN_ZOOM + STATION_ZOOM_THRESHOLD) / 2);
         map.setView([st.lat, st.lng], targetZoom);
         modalQuickSearch.classList.remove('visible');
@@ -947,7 +1021,10 @@
     }
   }, err => console.error('taxi fares sync error', err));
 
-  let taxiPoints = [];
+  let taxiPoints = [];        // raw points the rider actually clicked
+  let taxiSnappedPath = [];   // the real road-following path built from those clicks (used for the line, distance & fare)
+  let taxiSnapRequestToken = 0;
+  let roadSnapEnabled = true; // taxi route drawing follows real roads by default, same as bus line drawing
   const taxiColor = '#FF9F43';
   const taxiLayerGroup = L.layerGroup().addTo(map);
 
@@ -974,27 +1051,68 @@
     if(isBusSearchMode) stopBusSearchMode();
     taxiDrawing = true;
     taxiPoints = [];
+    taxiSnappedPath = [];
     taxiLayerGroup.clearLayers();
     resetTaxiInfoCard();
     btnTaxiNewLine.textContent = '⏹️ إنهاء الرسم';
-    drawHint.textContent = 'اضغط على نقطة الانطلاق ثم نقطة الوصول (يمكن إضافة نقاط أكثر)، ثم اضغط "إنهاء الرسم"';
+    drawHint.textContent = 'اضغط على نقطة الانطلاق ثم نقطة الوصول — سيُلتصق المسار بالطريق تلقائياً، ثم اضغط "إنهاء الرسم"';
     drawHint.classList.add('visible');
     map.getContainer().style.cursor = 'crosshair';
     map.on('click', onMapClickTaxiDrawing);
   }
+
   function onMapClickTaxiDrawing(e){
-    taxiPoints.push(e.latlng);
+    const newPoint = e.latlng;
+    const prevPoint = taxiPoints.length ? taxiPoints[taxiPoints.length - 1] : null;
+    taxiPoints.push(newPoint);
+
+    if(!prevPoint || !roadSnapEnabled){
+      taxiSnappedPath.push({ lat: newPoint.lat, lng: newPoint.lng });
+      redrawTaxiTempLine();
+    } else {
+      snapTaxiSegmentAndAppend(prevPoint, newPoint);
+    }
+  }
+
+  // Snaps each segment of the taxi route onto the real street network using OSRM (free,
+  // open-source routing), just like bus-line drawing — this also makes the distance/fare
+  // estimate more accurate since it follows actual streets instead of straight lines.
+  async function snapTaxiSegmentAndAppend(from, to){
+    const segmentToken = ++taxiSnapRequestToken;
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if(segmentToken !== taxiSnapRequestToken || !taxiDrawing) return;
+
+      if(data.code === 'Ok' && data.routes && data.routes[0]){
+        const coords = data.routes[0].geometry.coordinates;
+        const segPoints = coords.slice(1).map(c => ({ lat: c[1], lng: c[0] }));
+        taxiSnappedPath.push(...(segPoints.length ? segPoints : [{ lat: to.lat, lng: to.lng }]));
+      } else {
+        taxiSnappedPath.push({ lat: to.lat, lng: to.lng });
+        showToast('⚠️ تعذّرت محاذاة هذا الجزء مع الطريق، أُضيف كخط مستقيم');
+      }
+    } catch(err){
+      if(segmentToken !== taxiSnapRequestToken || !taxiDrawing) return;
+      taxiSnappedPath.push({ lat: to.lat, lng: to.lng });
+      showToast('⚠️ تعذّر الاتصال بخدمة محاذاة الطرق لهذا الجزء');
+    }
     redrawTaxiTempLine();
   }
+
   function redrawTaxiTempLine(){
     taxiLayerGroup.clearLayers();
-    if(taxiPoints.length >= 2){
-      L.polyline(taxiPoints, { color: taxiColor, weight:5, lineCap:'round', lineJoin:'round', dashArray:'2 8' }).addTo(taxiLayerGroup);
+    if(taxiSnappedPath.length >= 2){
+      L.polyline(taxiSnappedPath, { color: taxiColor, weight:5, lineCap:'round', lineJoin:'round', dashArray:'2 8' }).addTo(taxiLayerGroup);
     }
     taxiPoints.forEach(p => L.marker(p, { icon: taxiVertexIcon() }).addTo(taxiLayerGroup));
   }
+
   function stopTaxiDrawing(silent){
     taxiDrawing = false;
+    taxiSnapRequestToken++; // invalidate any in-flight snapping request
     map.off('click', onMapClickTaxiDrawing);
     map.getContainer().style.cursor = '';
     btnTaxiNewLine.textContent = '➕ رسم مسار رحلتي';
@@ -1002,17 +1120,18 @@
 
     if(silent) return;
 
-    if(taxiPoints.length < 2){
+    if(taxiSnappedPath.length < 2){
       showToast('⚠️ ارسم نقطتين على الأقل (انطلاق ووصول)');
       taxiLayerGroup.clearLayers();
       taxiPoints = [];
+      taxiSnappedPath = [];
       resetTaxiInfoCard();
       return;
     }
     taxiLayerGroup.clearLayers();
-    L.polyline(taxiPoints, { color: taxiColor, weight:5, lineCap:'round', lineJoin:'round' }).addTo(taxiLayerGroup);
-    L.marker(taxiPoints[0], { icon: taxiStartIcon }).addTo(taxiLayerGroup);
-    L.marker(taxiPoints[taxiPoints.length - 1], { icon: taxiEndIcon }).addTo(taxiLayerGroup);
+    L.polyline(taxiSnappedPath, { color: taxiColor, weight:5, lineCap:'round', lineJoin:'round' }).addTo(taxiLayerGroup);
+    L.marker(taxiSnappedPath[0], { icon: taxiStartIcon }).addTo(taxiLayerGroup);
+    L.marker(taxiSnappedPath[taxiSnappedPath.length - 1], { icon: taxiEndIcon }).addTo(taxiLayerGroup);
     calculateAndShowTaxiFare();
   }
 
@@ -1028,6 +1147,7 @@
       drawHint.classList.remove('visible');
     }
     taxiPoints = [];
+    taxiSnappedPath = [];
     taxiLayerGroup.clearLayers();
     resetTaxiInfoCard();
     showToast('🧹 تم مسح المسار');
@@ -1035,8 +1155,8 @@
 
   function calculateAndShowTaxiFare(){
     let distanceKm = 0;
-    for(let i = 0; i < taxiPoints.length - 1; i++){
-      distanceKm += haversine(taxiPoints[i].lat, taxiPoints[i].lng, taxiPoints[i+1].lat, taxiPoints[i+1].lng);
+    for(let i = 0; i < taxiSnappedPath.length - 1; i++){
+      distanceKm += haversine(taxiSnappedPath[i].lat, taxiSnappedPath[i].lng, taxiSnappedPath[i+1].lat, taxiSnappedPath[i+1].lng);
     }
     const avgSpeedKmh = 28;
     const durationMin = (distanceKm / avgSpeedKmh) * 60;
