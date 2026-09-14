@@ -1,6 +1,6 @@
 // Minimal service worker — just enough to make the app installable (PWA/TWA
 // requirements) and cache the app shell so it opens instantly next time.
-const CACHE_NAME = 'oran-transport-v6';
+const CACHE_NAME = 'oran-transport-v3';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (event) => {
