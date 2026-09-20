@@ -252,6 +252,26 @@
   .panel-btn:not(.solid-blue):hover{ background:var(--bg-app); border-color:var(--blue); }
   .panel-btn.solid-blue:hover{ filter:brightness(1.06); transform:translateY(-1px); }
 
+  /* ---- Search-mode option cards (place / touch) ---- */
+  .search-option-card{
+    display:flex; align-items:center; gap:12px; width:100%;
+    padding:14px 16px; border:none; border-radius:16px; cursor:pointer;
+    color:#fff; text-align:right; font-family:inherit;
+    box-shadow:0 8px 20px rgba(0,0,0,0.18);
+    transition:transform .15s var(--ease-pop), box-shadow .2s ease, filter .15s ease;
+  }
+  .search-option-card:active{ transform:scale(0.97); }
+  .search-option-card:hover{ filter:brightness(1.06); transform:translateY(-1px); }
+  .search-option-icon{
+    width:42px; height:42px; border-radius:13px; flex-shrink:0;
+    background:rgba(255,255,255,0.22);
+    display:flex; align-items:center; justify-content:center; font-size:20px;
+  }
+  .search-option-text{ flex:1; display:flex; flex-direction:column; gap:2px; min-width:0; }
+  .search-option-title{ font-weight:800; font-size:15px; }
+  .search-option-sub{ font-size:11.5px; opacity:0.85; font-weight:500; }
+  .search-option-arrow{ font-size:20px; opacity:0.75; flex-shrink:0; }
+
   ::-webkit-scrollbar{ width:6px; }
   ::-webkit-scrollbar-thumb{ background:#ccc; border-radius:3px; }
 
@@ -333,6 +353,52 @@
   }
   .mini-btn:active{ transform:scale(0.95); }
   .mini-btn:hover{ background:var(--bg-app); border-color:var(--blue); }
+
+  /* ---- Transfer-route solution card (line A -> transfer -> line B) ---- */
+  .transfer-card{
+    position:relative; margin-top:10px; background:#fff; border-radius:18px;
+    padding:16px 14px 12px; overflow:hidden;
+    box-shadow:var(--shadow-soft); border:1px solid var(--border);
+  }
+  .transfer-card-accent{ position:absolute; top:0; right:0; left:0; height:5px; }
+  .transfer-card-head{ display:flex; align-items:center; gap:10px; }
+  .transfer-card-icon{
+    width:36px; height:36px; border-radius:12px; flex-shrink:0; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:17px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.2);
+  }
+  .transfer-card-title{ font-weight:800; font-size:14.5px; color:var(--text-dark); }
+  .transfer-card-sub{ font-size:11.5px; color:var(--text-mid); margin-top:2px; }
+  .transfer-timeline{ margin:14px 0 4px; }
+  .transfer-step{ display:flex; align-items:stretch; gap:10px; }
+  .transfer-step-marker{ display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+  .transfer-dot{
+    width:24px; height:24px; border-radius:50%; color:#fff; font-size:12px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .transfer-dot-mid{
+    background:#fff; border:2px dashed #C7C4E8; color:var(--text-mid); font-size:12.5px; box-shadow:none;
+  }
+  .transfer-connector{ width:3px; flex:1; min-height:14px; margin:2px 0; border-radius:3px; }
+  .transfer-step-body{
+    flex:1; padding:1px 0 14px; font-size:13px; line-height:1.6; color:var(--text-dark);
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  }
+  .transfer-step:last-child .transfer-step-body{ padding-bottom:2px; }
+  .transfer-meta{ display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 2px; }
+  .transfer-pill{ font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; }
+  .transfer-pill-good{ background:var(--green-bg); color:var(--green-text); }
+  .transfer-pill-warn{ background:#FFF1E0; color:#B9550A; }
+  .transfer-pill-dist{ background:#EFEDFF; color:var(--blue-dark); }
+  .transfer-cta{
+    margin-top:12px; width:100%; border:none; border-radius:12px; padding:11px; font-size:13px;
+    font-weight:800; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    gap:6px; box-shadow:0 6px 16px rgba(0,0,0,0.2); transition:transform .15s var(--ease-pop);
+  }
+  .transfer-cta:active{ transform:scale(0.97); }
+  .tc-grad-warm{ background:linear-gradient(135deg, #FF9F43 0%, #FF5D8F 100%); }
+  .tc-grad-cool{ background:linear-gradient(135deg, #6C63FF 0%, #9B5DE5 100%); }
 
   .search-results .line-card{ margin-bottom:9px; }
   .search-radius-row{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
@@ -440,9 +506,23 @@
         <span>🔍 البحث</span>
         <button class="modal-close" id="modal-search-menu-close">✕</button>
       </div>
-      <div class="modal-body" style="display:flex; flex-direction:column; gap:10px;">
-        <button class="panel-btn solid-blue" id="search-option-place">📍 البحث عن مكان</button>
-        <button class="panel-btn solid-blue" id="search-option-touch">👆 البحث باللمس</button>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <button class="search-option-card tc-grad-cool" id="search-option-place">
+          <span class="search-option-icon">📍</span>
+          <span class="search-option-text">
+            <span class="search-option-title">البحث عن مكان</span>
+            <span class="search-option-sub">اكتب اسم الحي أو الشارع أو المحطة</span>
+          </span>
+          <span class="search-option-arrow">‹</span>
+        </button>
+        <button class="search-option-card tc-grad-warm" id="search-option-touch">
+          <span class="search-option-icon">👆</span>
+          <span class="search-option-text">
+            <span class="search-option-title">البحث باللمس</span>
+            <span class="search-option-sub">اضغط على أي نقطة في الخريطة مباشرة</span>
+          </span>
+          <span class="search-option-arrow">‹</span>
+        </button>
       </div>
     </div>
   </div>
@@ -676,6 +756,22 @@
     return savedLines.filter(line => distancePointToPolylineMeters(point, line.points) <= radiusMeters);
   }
 
+  // If nothing serves a place within the normal walking distance (500م), widen the search step by
+  // step instead of giving up — a real (if more distant) bus connection should always surface,
+  // especially for places matched via the map search that can sit far from the nearest road.
+  const ADAPTIVE_SEARCH_RADII_M = [500, 800, 1200, 1800, 2500, 3500, 5000];
+  function linesNearPointAdaptive(point){
+    for(const r of ADAPTIVE_SEARCH_RADII_M){
+      const lines = linesNearPoint(point, r);
+      if(lines.length){
+        let closestM = Infinity;
+        lines.forEach(l => { const d = distancePointToPolylineMeters(point, l.points); if(d < closestM) closestM = d; });
+        return { lines, radiusUsed: r, closestM };
+      }
+    }
+    return { lines: [], radiusUsed: ADAPTIVE_SEARCH_RADII_M[ADAPTIVE_SEARCH_RADII_M.length - 1], closestM: Infinity };
+  }
+
   // Better matching for a named station: a line counts as passing through it if either
   // (a) its drawn path comes within radiusMeters of the station, OR
   // (b) the station's name was explicitly registered as one of the line's stops —
@@ -690,6 +786,18 @@
       });
       return byDistance || byRegisteredStop;
     });
+  }
+  function linesForStationAdaptive(station){
+    const pt = { lat: station.lat, lng: station.lng };
+    for(const r of ADAPTIVE_SEARCH_RADII_M){
+      const lines = linesForStation(station, r);
+      if(lines.length){
+        let closestM = Infinity;
+        lines.forEach(l => { const d = distancePointToPolylineMeters(pt, l.points); if(d < closestM) closestM = d; });
+        return { lines, radiusUsed: r, closestM };
+      }
+    }
+    return { lines: [], radiusUsed: ADAPTIVE_SEARCH_RADII_M[ADAPTIVE_SEARCH_RADII_M.length - 1], closestM: Infinity };
   }
 
   /* =========================================================
@@ -788,88 +896,158 @@
   }
 
   function findTransferOptions(originPoint, destPoint){
-    const originLines = linesNearPoint(originPoint, MAX_WALK_TO_STATION_M);
-    const destLines   = linesNearPoint(destPoint,   MAX_WALK_TO_STATION_M);
+    const originResult = linesNearPointAdaptive(originPoint);
+    const destResult   = linesNearPointAdaptive(destPoint);
+    const originLines = originResult.lines;
+    const destLines   = destResult.lines;
+    const walkNotes = [];
+    if(originLines.length && originResult.radiusUsed > MAX_WALK_TO_STATION_M){
+      walkNotes.push(`🚶 أقرب خط لمكان الانطلاق يبعد نحو ${Math.round(originResult.closestM)} متر`);
+    }
+    if(destLines.length && destResult.radiusUsed > MAX_WALK_TO_STATION_M){
+      walkNotes.push(`🚶 أقرب خط للوجهة يبعد نحو ${Math.round(destResult.closestM)} متر`);
+    }
     const direct = originLines.filter(l => destLines.includes(l));
-    if(direct.length) return { direct, transfers: [] };
+    if(direct.length) return { direct, transfers: [], originLines, destLines, walkNotes };
 
-    const candidates = [];
+    // Per-call caches: these are line-intrinsic and get reused across many line-pair checks below,
+    // especially once a second transfer is tried across every saved line (not just origin/dest lines).
+    const cumCache = new Map();
+    const getCum = (line) => {
+      if(!cumCache.has(line.id)) cumCache.set(line.id, buildCumulativeDistancesKm(line.points));
+      return cumCache.get(line.id);
+    };
+    const boundsCache = new Map();
+    const getBounds = (line) => {
+      if(!boundsCache.has(line.id)) boundsCache.set(line.id, boundsOfPoints(line.points));
+      return boundsCache.get(line.id);
+    };
+    const stopsCache = new Map();
+    const getStops = (line) => {
+      if(!stopsCache.has(line.id)) stopsCache.set(line.id, stationsOnLine(line));
+      return stopsCache.get(line.id);
+    };
+
+    // Finds every plausible point where lineX and lineY could be used to change buses: a station
+    // name registered on BOTH lines, and/or wherever the two drawn routes physically come closest.
+    // Returns the raw list (not just the "best" one) so callers can pick using their own context —
+    // the same pair of lines can be the best or worst choice depending on where the origin/
+    // destination/next leg actually are.
+    function findLineConnection(lineX, lineY, maxWalkM){
+      const walkLimit = maxWalkM || MAX_TRANSFER_WALK_M;
+      const cumX = getCum(lineX), cumY = getCum(lineY);
+      const stopsX = getStops(lineX), stopsY = getStops(lineY);
+      const pairCandidates = [];
+      const sharedNames = [...stopsX].filter(nameX => [...stopsY].some(nY => namesMatch(nameX, nY)));
+
+      sharedNames.forEach(nameX => {
+        const st = findGlobalStationByName(nameX);
+        if(!st) return;
+        const pt = { lat: st.lat, lng: st.lng };
+        const px = projectPointOnLine(pt, lineX.points, cumX);
+        const py = projectPointOnLine(pt, lineY.points, cumY);
+        if(!px || !py) return;
+        const realWalkM = haversine(px.latlng.lat, px.latlng.lng, py.latlng.lat, py.latlng.lng) * 1000;
+        pairCandidates.push({ pointX: px.latlng, pointY: py.latlng, cumOnX: px.distAlongKm, cumOnY: py.distAlongKm, walkMeters: realWalkM, transferName: st.name });
+      });
+
+      const boxX = getBounds(lineX), boxY = getBounds(lineY);
+      const searchMarginKm = Math.max(walkLimit, sharedNames.length && !pairCandidates.length ? 1500 : 0) / 1000;
+      if(boxesNear(boxX, boxY, searchMarginKm)){
+        let best = null;
+        lineX.points.forEach(px => {
+          lineY.points.forEach(py => {
+            const d = haversine(px.lat, px.lng, py.lat, py.lng) * 1000;
+            if(!best || d < best.d) best = { px, py, d };
+          });
+        });
+        const nameFallbackApplies = sharedNames.length > 0 && !pairCandidates.length;
+        if(best && (best.d <= walkLimit || nameFallbackApplies)){
+          const pxProj = projectPointOnLine(best.px, lineX.points, cumX);
+          const pyProj = projectPointOnLine(best.py, lineY.points, cumY);
+          const nearStation = nearestGlobalStation(best.px, 40) || nearestGlobalStation(best.py, 40);
+          const label = nearStation ? nearStation.name : (sharedNames[0] || null);
+          pairCandidates.push({ pointX: best.px, pointY: best.py, cumOnX: pxProj.distAlongKm, cumOnY: pyProj.distAlongKm, walkMeters: best.d, transferName: label });
+        }
+      }
+      return pairCandidates;
+    }
+
+    // ---- try a single transfer first: line A (near origin) -> line B (near destination) ----
+    const oneHop = [];
     originLines.forEach(lineA => {
-      const cumA = buildCumulativeDistancesKm(lineA.points);
+      const cumA = getCum(lineA);
       const projOrigin = projectPointOnLine(originPoint, lineA.points, cumA);
       if(!projOrigin) return;
-      const boxA = boundsOfPoints(lineA.points);
-      const stopsA = stationsOnLine(lineA);
-
       destLines.forEach(lineB => {
         if(lineA.id === lineB.id) return;
-        const cumB = buildCumulativeDistancesKm(lineB.points);
+        const cumB = getCum(lineB);
         const projDest = projectPointOnLine(destPoint, lineB.points, cumB);
         if(!projDest) return;
-        const stopsB = stationsOnLine(lineB);
-        const pairCandidates = [];
-        const sharedNames = [...stopsA].filter(nameA => [...stopsB].some(nb => namesMatch(nameA, nb)));
-
-        // Candidate: a station name registered on BOTH lines' own station lists — this alone is
-        // trusted as a real transfer stop (that's what the admin recorded), regardless of whether
-        // a separate map pin with a matching name exists. A pin, if found, just gives a precise
-        // coordinate; without one we fall back to wherever the two routes physically come closest.
-        sharedNames.forEach(nameA => {
-          const st = findGlobalStationByName(nameA);
-          if(!st) return;
-          const pt = { lat: st.lat, lng: st.lng };
-          const pa = projectPointOnLine(pt, lineA.points, cumA);
-          const pb = projectPointOnLine(pt, lineB.points, cumB);
-          if(!pa || !pb) return;
-          // Use each line's own snapped point (not the raw pin) so a pin that sits a bit off from
-          // one of the roads doesn't hide a real walking gap between where the two lines actually run.
-          const realWalkM = haversine(pa.latlng.lat, pa.latlng.lng, pb.latlng.lat, pb.latlng.lng) * 1000;
-          pairCandidates.push({ pointA: pa.latlng, pointB: pb.latlng, cumOnA: pa.distAlongKm, cumOnB: pb.distAlongKm, walkMeters: realWalkM, transferName: st.name });
+        const candidates = findLineConnection(lineA, lineB);
+        if(!candidates.length) return;
+        let best = null;
+        candidates.forEach(c => {
+          const distAKm = Math.abs(c.cumOnX - projOrigin.distAlongKm);
+          const distBKm = Math.abs(projDest.distAlongKm - c.cumOnY);
+          const totalKm = distAKm + c.walkMeters/1000 + distBKm;
+          if(!best || totalKm < best.totalKm) best = { c, totalKm };
         });
-
-        // Candidate: wherever the two full routes physically come closest. Used both as a plain
-        // geographic transfer point (capped at MAX_TRANSFER_WALK_M) and — when the lines share a
-        // registered station name but no pin was found above — as that named stop's best-guess
-        // position, uncapped, since the shared name is already strong evidence it's a real transfer.
-        const boxB = boundsOfPoints(lineB.points);
-        const searchMarginKm = Math.max(MAX_TRANSFER_WALK_M, sharedNames.length && !pairCandidates.length ? 1500 : 0) / 1000;
-        if(boxesNear(boxA, boxB, searchMarginKm)){
-          let best = null;
-          lineA.points.forEach(pa => {
-            lineB.points.forEach(pb => {
-              const d = haversine(pa.lat, pa.lng, pb.lat, pb.lng) * 1000;
-              if(!best || d < best.d) best = { pa, pb, d };
-            });
-          });
-          const nameFallbackApplies = sharedNames.length > 0 && !pairCandidates.length;
-          if(best && (best.d <= MAX_TRANSFER_WALK_M || nameFallbackApplies)){
-            const paProj = projectPointOnLine(best.pa, lineA.points, cumA);
-            const pbProj = projectPointOnLine(best.pb, lineB.points, cumB);
-            const nearStation = nearestGlobalStation(best.pa, 40) || nearestGlobalStation(best.pb, 40);
-            const label = nearStation ? nearStation.name : (sharedNames[0] || null);
-            pairCandidates.push({ pointA: best.pa, pointB: best.pb, cumOnA: paProj.distAlongKm, cumOnB: pbProj.distAlongKm, walkMeters: best.d, transferName: label });
-          }
-        }
-
-        if(!pairCandidates.length) return;
-        // pick the most logical point for THIS pair of lines: shortest total trip (ride + walk + ride)
-        pairCandidates.forEach(c => {
-          c.distAKm = Math.abs(c.cumOnA - projOrigin.distAlongKm);
-          c.distBKm = Math.abs(projDest.distAlongKm - c.cumOnB);
-          c.totalKm = c.distAKm + c.walkMeters/1000 + c.distBKm;
-        });
-        pairCandidates.sort((a,b) => a.totalKm - b.totalKm);
-        const best = pairCandidates[0];
-        candidates.push({
-          lineA, lineB, pointA: best.pointA, pointB: best.pointB,
-          walkMeters: Math.round(best.walkMeters), transferName: best.transferName,
-          distAKm: best.distAKm, distBKm: best.distBKm, totalKm: best.totalKm
+        oneHop.push({
+          lines: [lineA, lineB],
+          transfers: [{ pointFrom: best.c.pointX, pointTo: best.c.pointY, walkMeters: Math.round(best.c.walkMeters), transferName: best.c.transferName }],
+          totalKm: best.totalKm
         });
       });
     });
+    if(oneHop.length){
+      oneHop.sort((a,b) => a.totalKm - b.totalKm);
+      return { direct: [], transfers: oneHop.slice(0,3), originLines, destLines, walkNotes };
+    }
 
-    candidates.sort((a,b) => a.totalKm - b.totalKm);
-    return { direct: [], transfers: candidates.slice(0, 3) };
+    // ---- no single-transfer solution exists: fall back to two transfers ----
+    // line A (near origin) -> any line B -> line C (near destination)
+    const twoHop = [];
+    originLines.forEach(lineA => {
+      const cumA = getCum(lineA);
+      const projOrigin = projectPointOnLine(originPoint, lineA.points, cumA);
+      if(!projOrigin) return;
+      savedLines.forEach(lineB => {
+        if(lineB.id === lineA.id) return;
+        const candsAB = findLineConnection(lineA, lineB, MAX_TRANSFER_WALK_M * 1.5);
+        if(!candsAB.length) return;
+        destLines.forEach(lineC => {
+          if(lineC.id === lineA.id || lineC.id === lineB.id) return;
+          const cumC = getCum(lineC);
+          const projDest = projectPointOnLine(destPoint, lineC.points, cumC);
+          if(!projDest) return;
+          const candsBC = findLineConnection(lineB, lineC, MAX_TRANSFER_WALK_M * 1.5);
+          if(!candsBC.length) return;
+          let best = null;
+          candsAB.forEach(c1 => {
+            candsBC.forEach(c2 => {
+              const distAKm = Math.abs(c1.cumOnX - projOrigin.distAlongKm);
+              const distBKm = Math.abs(c2.cumOnX - c1.cumOnY);
+              const distCKm = Math.abs(projDest.distAlongKm - c2.cumOnY);
+              const totalKm = distAKm + c1.walkMeters/1000 + distBKm + c2.walkMeters/1000 + distCKm;
+              if(!best || totalKm < best.totalKm) best = { c1, c2, totalKm };
+            });
+          });
+          if(best){
+            twoHop.push({
+              lines: [lineA, lineB, lineC],
+              transfers: [
+                { pointFrom: best.c1.pointX, pointTo: best.c1.pointY, walkMeters: Math.round(best.c1.walkMeters), transferName: best.c1.transferName },
+                { pointFrom: best.c2.pointX, pointTo: best.c2.pointY, walkMeters: Math.round(best.c2.walkMeters), transferName: best.c2.transferName }
+              ],
+              totalKm: best.totalKm
+            });
+          }
+        });
+      });
+    });
+    twoHop.sort((a,b) => a.totalKm - b.totalKm);
+    return { direct: [], transfers: twoHop.slice(0,2), originLines, destLines, walkNotes };
   }
 
   /* ---- drawing the full transfer trip on the map: line A + (walk, if any) + line B ---- */
@@ -885,7 +1063,7 @@
     const seen = new Set();
     const out = [];
     transfers.forEach(t => {
-      const key = [t.lineA.id, t.lineB.id].sort().join('|');
+      const key = t.lines.map(l => l.id).sort().join('|');
       if(seen.has(key)) return;
       seen.add(key);
       out.push(t);
@@ -918,50 +1096,66 @@
     clearDisplayedLine();
     clearTransferRoute();
 
-    const cumA = buildCumulativeDistancesKm(t.lineA.points);
-    const cumB = buildCumulativeDistancesKm(t.lineB.points);
-    const projOrigin = projectPointOnLine(originPoint, t.lineA.points, cumA);
-    const projDest   = projectPointOnLine(destPoint, t.lineB.points, cumB);
-    const projTransferA = projectPointOnLine(t.pointA, t.lineA.points, cumA);
-    const projTransferB = projectPointOnLine(t.pointB, t.lineB.points, cumB);
-    if(!projOrigin || !projDest || !projTransferA || !projTransferB){ showToast('⚠️ تعذّر رسم المسار الكامل'); return; }
+    const lines = t.lines;
+    const cums = lines.map(l => buildCumulativeDistancesKm(l.points));
+    const projOrigin = projectPointOnLine(originPoint, lines[0].points, cums[0]);
+    const projDest   = projectPointOnLine(destPoint, lines[lines.length - 1].points, cums[cums.length - 1]);
+    if(!projOrigin || !projDest){ showToast('⚠️ تعذّر رسم المسار الكامل'); return; }
 
-    const segA = trimLineBetweenCum(t.lineA.points, cumA, projOrigin.distAlongKm, projTransferA.distAlongKm);
-    const segB = trimLineBetweenCum(t.lineB.points, cumB, projTransferB.distAlongKm, projDest.distAlongKm);
+    // Work out which stretch of each line to draw: the first line runs from the origin to its
+    // first transfer point, the last line runs from its transfer point to the destination, and
+    // any line in between (only when there are two transfers) runs between its two transfer points.
+    const segs = [];
+    for(let i=0;i<lines.length;i++){
+      let fromCum, toCum;
+      if(i === 0){
+        fromCum = projOrigin.distAlongKm;
+        const proj = projectPointOnLine(t.transfers[0].pointFrom, lines[0].points, cums[0]);
+        toCum = proj ? proj.distAlongKm : fromCum;
+      } else if(i === lines.length - 1){
+        const proj = projectPointOnLine(t.transfers[i-1].pointTo, lines[i].points, cums[i]);
+        fromCum = proj ? proj.distAlongKm : 0;
+        toCum = projDest.distAlongKm;
+      } else {
+        const projIn  = projectPointOnLine(t.transfers[i-1].pointTo, lines[i].points, cums[i]);
+        const projOut = projectPointOnLine(t.transfers[i].pointFrom, lines[i].points, cums[i]);
+        fromCum = projIn ? projIn.distAlongKm : 0;
+        toCum = projOut ? projOut.distAlongKm : 0;
+      }
+      segs.push(trimLineBetweenCum(lines[i].points, cums[i], fromCum, toCum));
+    }
 
-    const polyA = L.polyline(segA, { color: t.lineA.color, weight:6, dashArray:'11 9', lineCap:'round', lineJoin:'round' }).addTo(map);
-    const polyB = L.polyline(segB, { color: t.lineB.color, weight:6, dashArray:'11 9', lineCap:'round', lineJoin:'round' }).addTo(map);
-    transferRouteLayers.push(polyA, polyB);
+    const polylines = segs.map((seg, i) => L.polyline(seg, { color: lines[i].color, weight:6, dashArray:'11 9', lineCap:'round', lineJoin:'round' }).addTo(map));
+    transferRouteLayers.push(...polylines);
 
-    // Connect the two lines using where they actually end up drawn (not the raw candidate points),
-    // so a gap is never silently missing even if the underlying pin/estimate was slightly off.
-    const gapStart = segA[segA.length - 1];
-    const gapEnd = segB[0];
-    const gapMeters = haversine(gapStart.lat, gapStart.lng, gapEnd.lat, gapEnd.lng) * 1000;
-
-    let walkLine = null;
-    if(gapMeters > TRANSFER_INTERSECT_M){
-      const walkPath = await fetchWalkingPath(gapStart, gapEnd);
-      walkLine = L.polyline(walkPath, { color:'#E53935', weight:5, dashArray:'2 7', lineCap:'round' }).addTo(map);
-      const walkMidpoint = walkPath[Math.floor(walkPath.length / 2)];
-      const walkerMarker = L.marker(walkMidpoint, { icon: walkingPersonIcon }).addTo(map).bindPopup(`🚶 امشِ ~${Math.round(gapMeters)} متر`);
-      transferRouteLayers.push(walkLine, walkerMarker);
+    // Connect each consecutive pair of segments using where they actually end up drawn (not the
+    // raw candidate points), so a gap is never silently missing even if the estimate was slightly off.
+    for(let i=0;i<segs.length-1;i++){
+      const gapStart = segs[i][segs[i].length - 1];
+      const gapEnd = segs[i+1][0];
+      const gapMeters = haversine(gapStart.lat, gapStart.lng, gapEnd.lat, gapEnd.lng) * 1000;
+      if(gapMeters > TRANSFER_INTERSECT_M){
+        const walkPath = await fetchWalkingPath(gapStart, gapEnd);
+        const walkLine = L.polyline(walkPath, { color:'#E53935', weight:5, dashArray:'2 7', lineCap:'round' }).addTo(map);
+        const walkMidpoint = walkPath[Math.floor(walkPath.length / 2)];
+        const walkerMarker = L.marker(walkMidpoint, { icon: walkingPersonIcon }).addTo(map).bindPopup(`🚶 امشِ ~${Math.round(gapMeters)} متر`);
+        const offMarker = L.marker(gapStart, { icon: transferPointIcon }).addTo(map).bindPopup(`🔀 نزول ${lines[i].name} هنا`);
+        const onMarker = L.marker(gapEnd, { icon: transferPointIcon }).addTo(map).bindPopup(`🔀 تبديل إلى ${lines[i+1].name}`);
+        transferRouteLayers.push(walkLine, walkerMarker, offMarker, onMarker);
+      } else {
+        const marker = L.marker(gapStart, { icon: transferPointIcon }).addTo(map).bindPopup(`🔀 تبديل إلى ${lines[i+1].name}`);
+        transferRouteLayers.push(marker);
+      }
     }
 
     const originMarker = L.marker(originPoint, { icon: startIcon }).addTo(map).bindPopup('🚏 الانطلاق');
     const destMarker = L.marker(destPoint, { icon: endIcon }).addTo(map).bindPopup('🏁 الوجهة');
-    const transferMarkerA = L.marker(t.pointA, { icon: transferPointIcon }).addTo(map).bindPopup(`🔀 تبديل إلى ${t.lineB.name}`);
-    transferRouteLayers.push(originMarker, destMarker, transferMarkerA);
-    if(gapMeters > TRANSFER_INTERSECT_M){
-      const transferMarkerB = L.marker(t.pointB, { icon: transferPointIcon }).addTo(map).bindPopup(`🔀 نزول ${t.lineA.name} هنا`);
-      transferRouteLayers.push(transferMarkerB);
-    }
+    transferRouteLayers.push(originMarker, destMarker);
 
-    const bounds = L.latLngBounds([...segA, ...segB, originPoint, destPoint]);
-    if(walkLine) bounds.extend(walkLine.getBounds());
+    const bounds = L.latLngBounds([].concat(...segs, [originPoint, destPoint]));
     map.fitBounds(bounds, { padding:[50,50] });
     modalQuickSearch.classList.remove('visible');
-    showToast('🗺️ المسار الكامل للرحلة بتبديل خط');
+    showToast(lines.length > 2 ? '🗺️ المسار الكامل للرحلة بتبديل خطين' : '🗺️ المسار الكامل للرحلة بتبديل خط');
   }
 
   let transferSuggestionSeq = 0;
@@ -971,23 +1165,70 @@
     const id = 't' + (++transferSuggestionSeq);
     transferSuggestionStore[id] = { t, originPoint, destPoint };
 
-    const isIntersection = t.walkMeters <= TRANSFER_INTERSECT_M;
-    const walkText = isIntersection
-      ? '🚏 تبديل مباشر — الخطان يلتقيان في نفس النقطة تقريباً'
-      : `🚶 امشِ نحو ${t.walkMeters} متر بين نقطتي التبديل`;
-    const transferLabel = t.transferName ? `🚏 ${t.transferName}` : '📍 نقطة تقاطع بين الخطين';
-    const totalKmText = typeof t.totalKm === 'number' ? `📏 المسافة الإجمالية التقريبية: ~${t.totalKm.toFixed(1)} كم` : '';
-    const titleText = rank === 2 ? '🔀 حل بديل (٢) بتبديل خط واحد:' : '🔀 الحل بتبديل خط واحد:';
+    const lines = t.lines;
+    const isTwoHop = lines.length > 2;
+    const totalKmText = typeof t.totalKm === 'number' ? `📏 ~${t.totalKm.toFixed(1)} كم إجمالاً` : '';
+    const titleText = isTwoHop
+      ? (rank === 2 ? 'حل بديل بتبديل خطين' : 'الحل بتبديل خطين')
+      : (rank === 2 ? 'حل بديل بتبديل خط واحد' : 'الحل بتبديل خط واحد');
+    const subText = isTwoHop
+      ? 'رحلة بثلاثة خطوط — تبديلان في الطريق'
+      : 'رحلة بخطين — انزل وأعد الركوب في المنتصف';
+    const gradClass = rank === 2 ? 'tc-grad-cool' : 'tc-grad-warm';
+    const neutral = '#C7C4E8';
+    const arabicDigits = ['١','٢','٣'];
+
+    let timelineHtml = '';
+    lines.forEach((line, i) => {
+      const isLast = i === lines.length - 1;
+      const legLabel = i === 0 ? 'من مكان الانطلاق' : (isLast ? 'إلى الوجهة' : 'حتى نقطة التبديل التالية');
+      const connectorToNext = !isLast
+        ? `<span class="transfer-connector" style="background:linear-gradient(to bottom, ${line.color}, ${neutral})"></span>`
+        : '';
+      timelineHtml += `
+        <div class="transfer-step">
+          <div class="transfer-step-marker">
+            <span class="transfer-dot" style="background:${line.color}">${arabicDigits[i] || (i+1)}</span>
+            ${connectorToNext}
+          </div>
+          <div class="transfer-step-body">اركب <span class="bus-badge" style="background:${line.color}">${line.name}</span> ${legLabel}</div>
+        </div>`;
+      if(!isLast){
+        const tr = t.transfers[i];
+        const isIntersection = tr.walkMeters <= TRANSFER_INTERSECT_M;
+        const nextLine = lines[i+1];
+        timelineHtml += `
+          <div class="transfer-step">
+            <div class="transfer-step-marker">
+              <span class="transfer-dot transfer-dot-mid">${isIntersection ? '🚏' : '🚶'}</span>
+              <span class="transfer-connector" style="background:linear-gradient(to bottom, ${neutral}, ${nextLine.color})"></span>
+            </div>
+            <div class="transfer-step-body">انزل في 🚏 ${tr.transferName || 'نقطة تقاطع بين الخطين'}</div>
+          </div>`;
+      }
+    });
+
+    const metaPills = t.transfers.map(tr => {
+      const isIntersection = tr.walkMeters <= TRANSFER_INTERSECT_M;
+      return isIntersection
+        ? '<span class="transfer-pill transfer-pill-good">🚏 تبديل مباشر بلا مشي</span>'
+        : `<span class="transfer-pill transfer-pill-warn">🚶 امشِ ~${tr.walkMeters} م</span>`;
+    }).join('');
+    const distPill = totalKmText ? `<span class="transfer-pill transfer-pill-dist">${totalKmText}</span>` : '';
 
     return `
-      <div style="margin-top:8px; background:#FFF7ED; border:1.5px dashed #FFB86B; border-radius:12px; padding:10px 12px; font-size:12.5px; line-height:2;">
-        <div style="font-weight:800; color:#9A3412; margin-bottom:4px;">${titleText}</div>
-        <div>① اركب <span class="bus-badge" style="background:${t.lineA.color}">${t.lineA.name}</span> من مكان الانطلاق</div>
-        <div>② انزل في ${transferLabel}</div>
-        <div>③ اركب <span class="bus-badge" style="background:${t.lineB.color}">${t.lineB.name}</span> إلى الوجهة</div>
-        <div style="color:#9A3412; font-weight:700;">${walkText}</div>
-        ${totalKmText ? `<div style="color:#9A3412;">${totalKmText}</div>` : ''}
-        <button class="mini-btn" style="margin-top:8px; width:100%;" data-view-transfer-route="${id}">🗺️ عرض المسار الكامل</button>
+      <div class="transfer-card">
+        <div class="transfer-card-accent ${gradClass}"></div>
+        <div class="transfer-card-head">
+          <span class="transfer-card-icon ${gradClass}">🔀</span>
+          <div>
+            <div class="transfer-card-title">${titleText}</div>
+            <div class="transfer-card-sub">${subText}</div>
+          </div>
+        </div>
+        <div class="transfer-timeline">${timelineHtml}</div>
+        <div class="transfer-meta">${metaPills}${distPill}</div>
+        <button class="transfer-cta ${gradClass}" data-view-transfer-route="${id}">🗺️ عرض المسار الكامل</button>
       </div>`;
   }
 
@@ -1256,9 +1497,13 @@
         savedSection.innerHTML = '<div class="empty-note">لا توجد نتائج مطابقة</div>';
       } else {
         uniqueMatches.forEach(st => {
-          let nearbyLines = null, transferBlock = '';
+          let nearbyLines = null, transferBlock = '', walkNoteBlock = '';
           if(!destQuery){
-            nearbyLines = linesForStation(st, PLACE_SEARCH_BUS_RADIUS_M);
+            const r = linesForStationAdaptive(st);
+            nearbyLines = r.lines;
+            if(r.lines.length && r.radiusUsed > MAX_WALK_TO_STATION_M){
+              walkNoteBlock = `<div class="line-card-stations" style="margin-top:6px;">🚶 أقرب خط يبعد نحو ${Math.round(r.closestM)} متر عن هذا المكان</div>`;
+            }
           } else if(destStation){
             const originPt = { lat: st.lat, lng: st.lng };
             const destPt = { lat: destStation.lat, lng: destStation.lng };
@@ -1267,6 +1512,11 @@
             if(!res.direct.length && res.transfers.length){
               const options = dedupeTransfersByLinePair(res.transfers).slice(0, 2);
               transferBlock = options.map((tr, i) => renderTransferSuggestion(tr, originPt, destPt, i + 1)).join('');
+            } else if(!res.direct.length && !res.transfers.length){
+              transferBlock = `<div class="line-card-stations" style="margin-top:6px;">${explainNoRouteFound(res)}</div>`;
+            }
+            if(res.walkNotes && res.walkNotes.length){
+              walkNoteBlock = res.walkNotes.map(n => `<div class="line-card-stations" style="margin-top:6px;">${n}</div>`).join('');
             }
           }
           const card = document.createElement('div');
@@ -1274,6 +1524,7 @@
           card.innerHTML = `
             <div class="line-card-top"><span class="line-card-name">📍 ${st.name}</span></div>
             ${renderNearbyLineBadges(nearbyLines, !!destQuery)}
+            ${walkNoteBlock}
             ${transferBlock}
             <div class="line-card-actions"><button class="mini-btn" data-quick-focus-place="${st.id}">🗺️ الذهاب إلى المكان</button></div>
           `;
@@ -1290,8 +1541,16 @@
     }
   }
 
-  // How far (in meters) from a searched place we still count a bus line as "passing through it"
-  const PLACE_SEARCH_BUS_RADIUS_M = 500;
+  // Shown when findTransferOptions comes back completely empty (no direct line, no 1-transfer,
+  // no 2-transfer) — pinpoints WHICH part of the search space was empty, so it's clear whether
+  // this is a data gap (no line drawn near one of the two points) or a missing connection between
+  // otherwise-nearby lines (no shared station name and no close-enough intersection on the map).
+  function explainNoRouteFound(res){
+    const maxKm = (ADAPTIVE_SEARCH_RADII_M[ADAPTIVE_SEARCH_RADII_M.length - 1] / 1000).toFixed(1);
+    if(!res.originLines.length) return `🚫 لا يوجد أي خط مسجَّل يمر قرب مكان الانطلاق حتى بعد توسيع البحث إلى ${maxKm} كم — تأكد من رسم خط قريب منه في لوحة الإدارة`;
+    if(!res.destLines.length) return `🚫 لا يوجد أي خط مسجَّل يمر قرب الوجهة حتى بعد توسيع البحث إلى ${maxKm} كم — تأكد من رسم خط قريب منها في لوحة الإدارة`;
+    return '🚫 توجد خطوط قرب الطرفين، لكن لم يُعثر على تسلسل خطوط يربطهما حتى بتبديلين — تحقّق من وجود محطة بنفس الاسم على الخطوط المفترض أن تتقاطع في الطريق، أو أن مساراتها المرسومة تتقاطع فعلياً قرب بعضها على الخريطة';
+  }
 
   function renderNearbyLineBadges(lines, hasDirection){
     if(lines === null || lines === undefined){
@@ -1365,14 +1624,22 @@
         if(seenOsmShortNames.has(normShort)) return;
         seenOsmShortNames.add(normShort);
         const originPt = { lat: parseFloat(place.lat), lng: parseFloat(place.lon) };
-        const originLines = linesNearPoint(originPt, PLACE_SEARCH_BUS_RADIUS_M);
-        let nearbyLines = originLines, transferBlock = '';
+        const originAdaptive = linesNearPointAdaptive(originPt);
+        let nearbyLines = originAdaptive.lines, transferBlock = '', walkNoteBlock = '';
+        if(originAdaptive.lines.length && originAdaptive.radiusUsed > MAX_WALK_TO_STATION_M){
+          walkNoteBlock = `<div class="line-card-stations" style="margin-top:6px;">🚶 أقرب خط يبعد نحو ${Math.round(originAdaptive.closestM)} متر عن هذا المكان</div>`;
+        }
         if(destPoint){
           const res = findTransferOptions(originPt, destPoint);
           nearbyLines = res.direct;
           if(!res.direct.length && res.transfers.length){
             const options = dedupeTransfersByLinePair(res.transfers).slice(0, 2);
             transferBlock = options.map((tr, i) => renderTransferSuggestion(tr, originPt, destPoint, i + 1)).join('');
+          } else if(!res.direct.length && !res.transfers.length){
+            transferBlock = `<div class="line-card-stations" style="margin-top:6px;">${explainNoRouteFound(res)}</div>`;
+          }
+          if(res.walkNotes && res.walkNotes.length){
+            walkNoteBlock = res.walkNotes.map(n => `<div class="line-card-stations" style="margin-top:6px;">${n}</div>`).join('');
           }
         }
         const card = document.createElement('div');
@@ -1381,6 +1648,7 @@
           <div class="line-card-top"><span class="line-card-name">🌍 ${shortName}</span></div>
           <div class="line-card-stations">${place.display_name}</div>
           ${renderNearbyLineBadges(nearbyLines, !!destPoint)}
+          ${walkNoteBlock}
           ${transferBlock}
           <div class="line-card-actions"><button class="mini-btn" data-quick-focus-osm="${idx}">🗺️ الذهاب إلى المكان</button></div>
         `;
